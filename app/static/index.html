@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiberzone WO Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <h1>Fiberzone WO Dashboard</h1>
+    <div id="stats-chips" class="chips"></div>
+  </div>
+  <div id="demo-banner" class="banner demo hidden">Mode Demo — backend belum terhubung. Data contoh lokal.</div>
+  <div id="error-banner" class="banner error hidden"></div>
+</header>
+
+<nav id="tabs" class="tabs" aria-label="Status WO">
+  <button class="tab active" data-status="masuk" id="tab-masuk">Masuk <span class="tab-count"></span></button>
+  <button class="tab" data-status="dikerjakan" id="tab-dikerjakan">Dikerjakan <span class="tab-count"></span></button>
+  <button class="tab" data-status="menunggu_verifikasi" id="tab-menunggu_verifikasi">Menunggu Verifikasi <span class="tab-count"></span></button>
+  <button class="tab" data-status="done" id="tab-done">Done <span class="tab-count"></span></button>
+</nav>
+
+<div class="toolbar">
+  <input id="search-input" type="search" placeholder="Cari No. WO, nama, alamat, telepon">
+  <select id="type-select">
+    <option value="all">Semua Tipe</option>
+    <option value="P">PSB</option>
+    <option value="M">Maintenance</option>
+    <option value="T">Troubleshoot</option>
+    <option value="D">Dismantle</option>
+    <option value="B">Bangun Jaringan</option>
+    <option value="S">Survey</option>
+  </select>
+  <button id="btn-add" class="btn primary">+ Tambah WO</button>
+</div>
+
+<main id="cards" class="cards" aria-live="polite"></main>
+
+<div id="toast-container" class="toast-container"></div>
+
+<div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title"></h2>
+      <button id="modal-close" class="modal-x" aria-label="Tutup">&times;</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+  </div>
+</div>
+
+<div id="add-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Tambah WO (paste pesan)</h2>
+      <button id="add-cancel" class="modal-x" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="add-text" rows="12" placeholder="Tempel pesan WO dari chat di sini..."></textarea>
+      <button id="add-submit" class="btn primary">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
