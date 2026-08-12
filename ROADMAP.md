@@ -119,8 +119,8 @@
 | Fase | Items | Complete | Progress |
 |---|---|---|---|
 | Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
-| Fase 1 (Parallel Core) | 8 tasks | 7 ✅ | **~100%** |
-| Fase 2 (Integration) | T-019–T-036 | 0 | **0%** |
+| Fase 1 (Parallel Core) | 8 tasks | 7 ✅ | **~88%** |
+| Fase 2 (Integration) | T-019–T-036 | 9 | **47%** (frontend selesai T-019–T-027; API/CLI/testing menunggu backend) |
 | Fase 3 (Validation) | — | 0 | **0%** |
 
 ---

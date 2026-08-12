@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-08-12 — Fase 2 — Frontend Dashboard (Implementasi Nyata)
+
+**Commit:** `cbe110e`, `b20f332`, `dca66d0`
+**Files:** `app/static/index.html`, `app/static/style.css`, `app/static/app.js`
+
+### What
+- Frontend dashboard vanilla JS (dark theme, tanpa build step/npm) — **kode pertama yang benar-benar ada** di repo (dokumen baseline sebelumnya mengklaim selesai tanpa kode).
+- 4 tab status + chips statistik, kartu WO dengan field kontekstual per tipe (P/M/T/D/B/S), search & filter tipe.
+- Transisi status via tombol (Mulai → Minta Verifikasi → Selesai) + timestamp + toast.
+- Modal detail WO, modal report (Case/Action/Solution/alat/splitter/raw), modal Tambah WO (paste teks).
+- **Mode demo + live**: deteksi `GET /api/health` (timeout 500 ms); demo memakai mock store 10 WO; live memakai `/api/*` (contract di spec) + polling 30 dtk.
+- Verifikasi browser penuh: tabs, search, filter, transisi, modal, toast, responsive 360 px, zero console error.
+
+### Architecture Decisions
+- Frontend vanilla JS/HTML/CSS single-page; API adapter `API.*` + `State` sebagai satu-satunya jalur data → backend FastAPI menyusul tanpa mengubah UI.
+- Design & plan: `docs/superpowers/specs/2026-08-12-frontend-design.md`, `docs/superpowers/plans/2026-08-12-frontend-dashboard.md`.
+
+### Known Debt
+- Backend FastAPI, parser Python, CLI (T-010–T-018, T-028–T-036) belum ada — BACKLOG sudah dikoreksi.
+- Live mode belum teruji end-to-end (belum ada backend).
+
+### Sub-agent
+- **Main session** (frontend)
+
+### Commit
+- Status: [Done]
+
+---
+
 ## 2026-08-12 — Baseline (Baseline State)
 
 **Commit:** (New)
