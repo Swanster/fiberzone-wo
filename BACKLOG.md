@@ -69,13 +69,13 @@
 | Fase 0 (Foundation) | 9 tasks (T-001–T-009) | 9 ✅ | **100%** |
 | Fase 1 (Parallel Core) | 9 tasks (T-010–T-018) | 9 ✅ | **100%** |
 | Fase 2 (Integration) | 19 tasks (T-019–T-037) | 19 ✅ | **100%** |
-| Fase 3 (Validation) | 0 tasks — verifikasi dilakukan pada task T-032–T-036 (Fase 2) | — | **30/30 test pass + verifikasi live** |
+| Fase 3 (Validation) | 0 tasks — verifikasi dilakukan pada task T-032–T-036 (Fase 2) | — | **31/31 test pass + verifikasi live** |
 
 **Overall:** 37/37 tasks complete (100%)
 
 > **Catatan koreksi (2026-08-12):** Dokumen baseline menandai seluruh task sebagai Done, tetapi pada kenyataannya hanya frontend (T-019–T-027) yang baru benar-benar diimplementasikan (commit `dca66d0`). Task T-010–T-018 (parser & API backend) dan T-028–T-036 (CLI & testing) **belum ada kodenya** — status akan dikoreksi/diisi saat fase backend & CLI dikerjakan.
 >
-> **Update (2026-08-13):** Backend + CLI + tests selesai diimplementasikan dan terintegrasi — commit `6a09ca2`. Verifikasi live: uvicorn di port 8600, mode live dashboard, transisi status + gate done (422 tanpa report), PUT report, paste report → auto done, search/filter, 30/30 test pass.
+> **Update (2026-08-13):** Backend + CLI + tests selesai diimplementasikan dan terintegrasi — commit `6a09ca2` (backend), `bbfa6ad` (T-036 perf test + JS parser Segmen/Description). Verifikasi live: uvicorn di port 8600, mode live dashboard, transisi status + gate done (422 tanpa report), PUT report, paste report → auto done, search/filter, 31/31 test pass.
 
 ---
 
