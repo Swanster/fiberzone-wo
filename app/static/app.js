@@ -47,6 +47,12 @@ const API = {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     });
+  },
+  async report(id, payload) {
+    return fetchJSON(`/api/wo/${id}/report`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
   }
 };
 
@@ -226,6 +232,30 @@ function parseRawDemo(text) {
     assignees: lines.flatMap(l => l.match(/@\S+/g) || []), raw_text: text };
 }
 
+function reportRawText(wo, r) {
+  const head = ['Report ' + (TYPE_LABEL[wo.wo_type] || ''),
+    '', wo.wo_code, wo.customer_name || '', wo.address || '', wo.phone || ''];
+  const body = [
+    r.status_report ? `Status : ${r.status_report}` : '',
+    r.report_date ? `Tanggal : ${r.report_date}` : '',
+    r.pic_teknisi ? `PIC Teknisi : ${r.pic_teknisi}` : '',
+    r.start ? `Start : ${r.start}` : '',
+    r.finish ? `Finish : ${r.finish}` : ''
+  ].filter(Boolean);
+  const list = (label, arr) => (arr && arr.length ? [label, ...arr.map(x => `- ${x}`)] : []);
+  return head.concat(body,
+    list('Case :', r.case), list('Action :', r.action), list('Solution :', r.solution))
+    .join('\n');
+}
+
+function mockSaveReport(id, report) {
+  const wo = MOCK_ITEMS.find(w => w.id === id);
+  if (!wo) throw Object.assign(new Error('WO tidak ditemukan'), { detail: 'WO tidak ditemukan' });
+  wo.report = report;
+  wo.report_raw = reportRawText(wo, report);
+  return wo;
+}
+
 async function fetchList() {
   if (State.mode === 'live') return API.list({ limit: 500 });
   return [...MOCK_ITEMS];
@@ -242,6 +272,15 @@ async function submitRaw(text) {
   if (!parsed.recognized) return parsed;
   const wo = mockAdd(parsed);
   return { recognized: true, wo_code: wo.wo_code, wo };
+}
+
+async function saveReport(id, report) {
+  if (State.mode === 'live') {
+    const wo = State.items.find(w => w.id === id) || {};
+    const raw = reportRawText(wo, report);
+    return API.report(id, { report, report_raw: raw });
+  }
+  return mockSaveReport(id, report);
 }
 
 /* ---------- render ---------- */
@@ -270,6 +309,14 @@ function actionButton(wo) {
   if (wo.status === 'done') {
     return `<button class="btn ghost" data-action="report" data-id="${wo.id}">Lihat Report</button>`;
   }
+  if (wo.status === 'menunggu_verifikasi') {
+    if (wo.report) {
+      return `<button class="btn ghost" data-action="report-form" data-id="${wo.id}">Edit Report</button>
+<button class="btn ghost" data-action="report" data-id="${wo.id}">Lihat Report</button>
+<button class="btn primary" data-action="transition" data-id="${wo.id}" data-status="done">Selesai</button>`;
+    }
+    return `<button class="btn primary" data-action="report-form" data-id="${wo.id}">Isi Report</button>`;
+  }
   const next = NEXT_STATUS[wo.status];
   const label = { dikerjakan: 'Mulai', menunggu_verifikasi: 'Minta Verifikasi', done: 'Selesai' }[next] || 'Lanjut';
   return `<button class="btn primary" data-action="transition" data-id="${wo.id}" data-status="${next}">${label}</button>`;
@@ -282,6 +329,8 @@ function cardHTML(wo) {
     return l ? `<div class="kw"><span>${lbl}</span><span>${l}</span></div>` : '';
   };
   const info = listChips(wo.assignees) + (wo.infra.length ? listChips(wo.infra, 'chip infra') : '');
+  const reportChip = (wo.status === 'menunggu_verifikasi' && wo.report)
+    ? '<span class="chip ok">Report terisi</span>' : '';
   return `<article class="card" data-id="${wo.id}">
     <div class="card-head">
       <span class="badge type-${escapeHTML(wo.wo_type)}">${escapeHTML(type)}</span>
@@ -299,6 +348,7 @@ function cardHTML(wo) {
     ${fieldRow('Password', wo.password, true)}
     ${wo.sharelocation ? `<div class="kw"><span>Lokasi</span><a href="${escapeHTML(wo.sharelocation)}" target="_blank" rel="noopener">${escapeHTML(wo.sharelocation)}</a></div>` : ''}
     ${info ? `<div class="chips">${info}</div>` : ''}
+    ${reportChip ? `<div class="chips">${reportChip}</div>` : ''}
     <div class="timestamps">${ts('Mulai', wo.started_at)}${ts('Verifikasi', wo.verification_at)}${ts('Selesai', wo.done_at)}</div>
     <div class="actions">${actionButton(wo)}</div>
   </article>`;
@@ -396,6 +446,7 @@ function bindEvents() {
         return;
       }
       if (btn.dataset.action === 'report') { openReport(id); return; }
+      if (btn.dataset.action === 'report-form') { openReportForm(id); return; }
     }
     const card = e.target.closest('.card');
     if (card && !e.target.closest('a')) openDetail(Number(card.dataset.id));
@@ -424,9 +475,55 @@ function bindEvents() {
       showToast(err.detail || err.message, 'error');
     }
   });
+  $('report-form-cancel').addEventListener('click', () => $('report-form-overlay').classList.add('hidden'));
+  $('report-form-overlay').addEventListener('click', (e) => {
+    if (e.target === $('report-form-overlay')) $('report-form-overlay').classList.add('hidden');
+  });
+  $('report-form-save').addEventListener('click', async () => {
+    const status = $('rf-status').value.trim();
+    if (!status) { showToast('Status Report wajib diisi', 'error'); return; }
+    const report = {
+      status_report: status,
+      case: $('rf-case').value.split('\n').map(s => s.trim()).filter(Boolean),
+      action: $('rf-action').value.split('\n').map(s => s.trim()).filter(Boolean),
+      solution: $('rf-solution').value.split('\n').map(s => s.trim()).filter(Boolean),
+      pic_teknisi: $('rf-pic').value.trim() || null,
+      report_date: $('rf-date').value || null,
+      start: $('rf-start').value || null,
+      finish: $('rf-finish').value || null
+    };
+    try {
+      await saveReport(reportFormId, report);
+      showToast('Report tersimpan');
+      $('report-form-overlay').classList.add('hidden');
+      await renderAll();
+    } catch (err) {
+      showToast(err.detail || err.message, 'error');
+    }
+  });
 }
 
 /* ---------- modals ---------- */
+
+let reportFormId = null;
+
+function openReportForm(id) {
+  const wo = State.items.find(w => w.id === id);
+  if (!wo) return;
+  reportFormId = id;
+  $('report-form-title').textContent = wo.report ? 'Edit Report' : 'Isi Report';
+  $('report-form-wo').innerHTML = `<span>WO</span><span class="mono">${escapeHTML(wo.wo_code)} — ${escapeHTML(wo.customer_name || '')}</span>`;
+  const r = wo.report || {};
+  $('rf-status').value = r.status_report || 'Cleared';
+  $('rf-date').value = r.report_date || new Date().toISOString().slice(0, 10);
+  $('rf-pic').value = r.pic_teknisi || '';
+  $('rf-start').value = r.start || '';
+  $('rf-finish').value = r.finish || '';
+  $('rf-case').value = (r.case || []).join('\n');
+  $('rf-action').value = (r.action || []).join('\n');
+  $('rf-solution').value = (r.solution || []).join('\n');
+  $('report-form-overlay').classList.remove('hidden');
+}
 
 function modalHTML(wo, showRaw) {
   const rows = [

@@ -64,6 +64,50 @@
   </div>
 </div>
 
+<div id="report-form-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="report-form-title">Isi Report</h2>
+      <button id="report-form-cancel" class="modal-x" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="report-form-wo" class="kw"><span></span><span></span></div>
+      <div class="form-grid">
+        <label>Status Report *
+          <select id="rf-status">
+            <option value="Cleared">Cleared</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </label>
+        <label>Tanggal Laporan
+          <input type="date" id="rf-date">
+        </label>
+        <label>PIC Teknisi
+          <input type="text" id="rf-pic" placeholder="nama teknisi">
+        </label>
+        <label>Start
+          <input type="time" id="rf-start">
+        </label>
+        <label>Finish
+          <input type="time" id="rf-finish">
+        </label>
+      </div>
+      <label>Case <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-case" rows="3" placeholder="- temuan masalah"></textarea>
+      </label>
+      <label>Action <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-action" rows="3" placeholder="- tindakan yang dilakukan"></textarea>
+      </label>
+      <label>Solution <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-solution" rows="3" placeholder="- solusi akhir"></textarea>
+      </label>
+      <button id="report-form-save" class="btn primary">Simpan Report</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
