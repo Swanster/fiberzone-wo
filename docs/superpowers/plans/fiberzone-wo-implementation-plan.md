@@ -393,10 +393,10 @@ T-001 → T-002 → T-003 → T-004 → T-005 → T-006 → T-007 → T-008 → 
 
 **Entry Criteria:**
 - Fase 1 (Foundation + Parallel Core) selesai
-- Semua task T-019–T-036 ter-commit
+- Semua task T-019–T-037 ter-commit
 
 **Exit Criteria:**
-- Semua T-019–T-036 ter-commit
+- Semua T-019–T-037 ter-commit
 - Frontend test pass
 - API test pass
 - Integration test pass
