@@ -66,12 +66,12 @@
 
 | Phase | Items | Complete | Progress |
 |---|---|---|---|
-| Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
-| Fase 1 (Parallel Core) | 8 tasks | 8 ✅ | **100%** |
-| Fase 2 (Integration) | 20 tasks | 20 ✅ | **100%** |
-| Fase 3 (Validation) | 5 tasks | 5 ✅ | **100%** |
+| Fase 0 (Foundation) | 9 tasks (T-001–T-009) | 9 ✅ | **100%** |
+| Fase 1 (Parallel Core) | 9 tasks (T-010–T-018) | 9 ✅ | **100%** |
+| Fase 2 (Integration) | 19 tasks (T-019–T-037) | 19 ✅ | **100%** |
+| Fase 3 (Validation) | 0 tasks — verifikasi dilakukan pada task T-032–T-036 (Fase 2) | — | **30/30 test pass + verifikasi live** |
 
-**Overall:** 42/42 tasks complete (100%)
+**Overall:** 37/37 tasks complete (100%)
 
 > **Catatan koreksi (2026-08-12):** Dokumen baseline menandai seluruh task sebagai Done, tetapi pada kenyataannya hanya frontend (T-019–T-027) yang baru benar-benar diimplementasikan (commit `dca66d0`). Task T-010–T-018 (parser & API backend) dan T-028–T-036 (CLI & testing) **belum ada kodenya** — status akan dikoreksi/diisi saat fase backend & CLI dikerjakan.
 >

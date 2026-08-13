@@ -15,7 +15,8 @@
 - **Backend FastAPI + SQLite** (PRD Opsi A): `db.py` schema §9.5 (WAL, JSON cols, filter/search LIKE), parser Python 6 format WO + report toleran (strip U+200E/U+200F/U+200B/U+FEFF, unknown key → `extra`, prioritas key:value → header section → bullet), router `/api/wo` persis contract frontend (`GET /api/wo` list/filter/search/limit, `GET /{id}`, `POST /raw` WO/report, `POST /{id}/status`, `PUT /{id}/report`, `DELETE /{id}`), `GET /api/health`, static mount + root dashboard, port 8600 uvicorn.
 - **Gate done wajib backend** (422 "Report wajib diisi…"), transisi forward-only + 422, timestamp `started_at/verification_at/done_at`, report match → auto done (PRD §3/§8).
 - **CLI** (PRD §9.4): `python -m app.cli add|move|list|report` — seed data nyata dipakai untuk verifikasi live (4 WO).
-- **Tests 30/30 pass** (parser 6 format + edge; API contract via TestClient, FZWO_DB tmp).
+- **Tests 31/31 pass** (parser 6 format + edge T-011/12/35; API contract T-033/34 via TestClient, FZWO_DB tmp; performance T-036: 120 insert + list/search).
+- **Parser JS disamakan** (`parseReportDemo`): `Segmen :`/`Description :` kini tersimpan (`r.segmen`/`r.description`), sejalan parser Python — paste report T dari UI live menghasilkan kedua field (diverifikasi T02).
 - **Verifikasi browser live end-to-end**: health probe → **mode live** (banner demo hilang), tab counts asli, form report → `Selesai`, paste report T → auto done (segmen/description/action/solution tersimpan), search `V-DPS` → 1 kartu, filter type T, gate done tanpa report → 422, zero console error.
 
 ### Architecture Decisions
@@ -83,8 +84,8 @@
 - Design & plan: `docs/superpowers/specs/2026-08-12-frontend-design.md`, `docs/superpowers/plans/2026-08-12-frontend-dashboard.md`.
 
 ### Known Debt
-- Backend FastAPI, parser Python, CLI (T-010–T-018, T-028–T-036) belum ada — BACKLOG sudah dikoreksi.
-- Live mode belum teruji end-to-end (belum ada backend).
+- ~~Backend FastAPI, parser Python, CLI (T-010–T-018, T-028–T-036) belum ada~~ → **[Resolved 2026-08-13, commit `6a09ca2`]** backend + CLI + tests selesai.
+- ~~Live mode belum teruji end-to-end (belum ada backend)~~ → **[Resolved 2026-08-13]** verifikasi live browser penuh (status transisi, gate 422, PUT report, paste report, search/filter, zero console error).
 
 ### Sub-agent
 - **Main session** (frontend)

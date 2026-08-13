@@ -118,16 +118,17 @@
 
 | Fase | Items | Complete | Progress |
 |---|---|---|---|
-| Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
-| Fase 1 (Parallel Core) | 8 tasks | 8 ✅ | **100%** |
-| Fase 2 (Integration) | 20 tasks | 20 ✅ | **100%** — backend `6a09ca2`, frontend `dca66d0`–`9eb71db`, verifikasi live port 8600 |
-| Fase 3 (Validation) | 5 tasks | 5 ✅ | **100%** — 30/30 test pass |
+| Fase 0 (Foundation) | 9 tasks (T-001–T-009) | 9 ✅ | **100%** |
+| Fase 1 (Parallel Core) | 9 tasks (T-010–T-018) | 9 ✅ | **100%** |
+| Fase 2 (Integration) | 19 tasks (T-019–T-037) | 19 ✅ | **100%** — backend `6a09ca2`, frontend `dca66d0`–`9eb71db`, verifikasi live port 8600 |
+| Fase 3 (Validation) | 0 tasks — validasi tercakup di T-032–T-036 (Fase 2) | — | **31/31 test pass + verifikasi live browser** |
 
 ---
 
 ## 📌 Rekomendasi
 
-1. Mulai Fase 0 segera (foundation workstream)
-2. Fase 1 (Parallel Core) bisa dijalankan paralel
-3. Setiap task harus commit + update roadmap/backlog/devlog
-4. Progress tracking di-maintain via git log + roadmap/backlog/devlog
+1. ~~Mulai Fase 0 segera (foundation workstream)~~ → Selesai (Fase 0–3 100%, commit `dca66d0`–`28a1314`)
+2. ~~Fase 1 (Parallel Core) bisa dijalankan paralel~~ → Selesai (backend `6a09ca2`, frontend `dca66d0`)
+3. Setiap task harus commit + update roadmap/backlog/devlog — dipertahankan
+4. Progress tracking di-maintain via git log + roadmap/backlog/devlog — dipertahankan
+5. Next: jalankan backend `uvicorn app.main:app --port 8600` (atau `python -m app.cli` untuk CLI), seed via `app.cli add`
