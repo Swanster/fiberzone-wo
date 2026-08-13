@@ -1,8 +1,34 @@
 # DEVLOG — Fiberzone Work Order Dashboard
 
-> **Timeline:** 2026-08-12
+> **Timeline:** 2026-08-12 — 2026-08-13
 > **Version:** v1.0.0
 > **Repository:** `/home/swanster/project6661/fiberzone-wo`
+
+---
+
+## 2026-08-13 — Fase 2 — Paste Report dari Chat (Telegram)
+
+**Commit:** *(belum)*
+**Files:** `app/static/index.html`, `app/static/style.css`, `app/static/app.js`, `docs/superpowers/specs/2026-08-12-report-verification-design.md`, `BACKLOG.md`
+
+### What
+- Tombol **`Paste Report`** di kartu Menunggu Verifikasi: tempel teks report dari chat (format Repot pasang baru / Report Maintenance / Report troubleshoot) → di-parse → `wo.report` terisi → **status langsung `done`** (keputusan user: paste = konfirmasi selesai teknisi).
+- **Parser demo toleran** (`parseReportDemo`, PRD §7.4): strip karakter tak terlihat (U+200E dll), mapping ~15 pola key (Status, HARI/TANGGAL, Pic teknisi, PIC yang mendampingi, Start/Finish, Tarik/Aktivasi, Meteran/Tarikan, Solution/Splitter/SOLITER, Alat Yang Terpasang, Said/Pas, SN ONT, Username, Password); urutan prioritas key:value → header section → bullet → baris polos.
+- **Validasi wo_code**: baris `WO/...` di teks harus sama persis dengan kartu; mismatch → toast error tanpa mutasi (demo & live, sebelum panggilan API).
+- **Form diperluas field teknis** (PIC Pendamping, Tarik/Aktivasi, Meteran, Splitter, Alat Terpasang, Splicer, SN ONT, Username/Password) — data hasil paste dapat dilengkapi setelah done; save **merge** `{...prev, ...form}` (key tak disentuh tidak hilang).
+- **Edit post-done**: tab Done → `Edit Report`; `report_raw` **dipertahankan** saat edit (raw paste asli tidak tertimpa; regenerasi hanya bila belum ada).
+- Live mode: `PUT /api/wo/{id}/report` + `POST /api/wo/{id}/status done`.
+- Verifikasi browser mode demo: paste → done + field lengkap (pendamping `ybs`, header SOLITER ikut, SN field terpisah), raw memuat baris tidak dikenal (`No. Hashem`), mismatch tertolak, edit post-done merge + raw preservasi, 10 WO utuh, **zero console error**.
+
+### Architecture Decisions
+- Parser JS di demo; live memakai contract API (client parse → PUT report → POST status) — backend boleh mengganti dengan parser server-side penuh nanti, `report_raw` asli selalu dikirim.
+- `report_raw` = teks asli paste (bukan regenerasi) → tidak ada informasi hilang.
+
+### Sub-agent
+- **Main session** (frontend)
+
+### Commit
+- Status: [Done]
 
 ---
 

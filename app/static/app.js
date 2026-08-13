@@ -207,6 +207,86 @@ function mockTransition(id, status) {
   return wo;
 }
 
+function parseReportDemo(text) {
+  const lines = text.split(/\r?\n/).map(l => l.replace(/[\u200E\u200F\u200B\uFEFF]/g, '').trim());
+  const woLine = lines.find(l => /^WO\/\d{6}\/[A-Z]\d+\//.test(l));
+  if (!woLine) return { recognized: false, reason: 'Tidak ada baris WO/... di teks' };
+  const wo_code = woLine;
+  const r = { status_report: null, case: [], action: [], solution: [], alat_terpasang: [],
+    pic_teknisi: null, report_date: null, start: null, finish: null, pic_pendamping: null,
+    tarik: null, aktivasi: null, meteran: null, splitter: null, splicer: null,
+    sn_ont: null, username: null, password: null };
+  let section = null; // case|action|solution|alat|splitter|splicer|solution_plain
+  const isSection = line => {
+    const l = line.toLowerCase();
+    if (/^case\s*:/.test(l)) return 'case';
+    if (/^action\s*:/.test(l)) return 'action';
+    if (/^solution\s*:?\s*$/.test(l) || /^solution\s*:/.test(l)) return 'solution';
+    if (/^alat yang terpasang\s*:?/.test(l)) return 'alat';
+    if (/^soliter\s*\/?/.test(l) || /^splitter/i.test(l)) return 'splitter';
+    if (/^(said|pas)\s*:/.test(l)) return 'splicer';
+    return null;
+  };
+  for (const line of lines) {
+    if (!line || /^WO\//.test(line)) continue;
+    const sec = isSection(line);
+    if (sec) {
+      section = sec;
+      if (sec === 'splicer' || sec === 'splitter') {
+        r[sec] = ((r[sec] || '') + '\n' + line).trim();
+      }
+      continue;
+    }
+    if (/^[-–•‣]/.test(line)) {
+      const item = line.replace(/^[-–•‣\s]+/, '');
+      if (section === 'case') r.case.push(item);
+      else if (section === 'action') r.action.push(item);
+      else if (section === 'solution') r.solution.push(item);
+      else if (section === 'alat') r.alat_terpasang.push(item);
+      else if (section === 'splitter') r.splitter = ((r.splitter || '') + '\n' + item).trim();
+      else if (section === 'splicer') r.splicer = ((r.splicer || '') + '\n' + item).trim();
+      continue;
+    }
+    const m = line.match(/^([A-Za-z\s\/\.]+?)\s*:\s*(.*)$/);
+    if (m) {
+      const k = m[1].trim().toLowerCase();
+      const v = m[2].trim();
+      if (/^status/.test(k)) { r.status_report = v || null; continue; }
+      if (/^hari|tanggal/.test(k)) { r.report_date = v || null; continue; }
+      if (/^pic teknisi/.test(k)) { r.pic_teknisi = v || null; continue; }
+      if (/damping/.test(k)) { r.pic_pendamping = v || null; continue; }
+      if (k === 'start') { r.start = v || null; continue; }
+      if (k === 'finish') { r.finish = v || null; continue; }
+      if (k === 'tarik') { r.tarik = v || null; continue; }
+      if (k === 'aktivasi') { r.aktivasi = v || null; continue; }
+      if (/meteran akhir|total tarikan/.test(k)) {
+        r.meteran = ((r.meteran || '') + '\n' + m[1].trim() + (v ? ' : ' + v : ' :')).trim();
+        continue;
+      }
+      if (/^sn ont/.test(k)) { r.sn_ont = v || null; continue; }
+      if (k === 'username') { r.username = v || null; continue; }
+      if (k === 'password') { r.password = v || null; continue; }
+      if (/^(said|pas)$/.test(k)) {
+        r.splicer = ((r.splicer || '') + '\n' + m[1].trim() + (v ? ' : ' + v : ' :')).trim();
+        continue;
+      }
+    }
+    if (section === 'splitter') { r.splitter = ((r.splitter || '') + '\n' + line).trim(); continue; }
+    if (section === 'splicer') { r.splicer = ((r.splicer || '') + '\n' + line).trim(); continue; }
+    if (section === 'solution') { r.solution.push(line); continue; }
+    if (/tarikan|meter/i.test(line)) r.meteran = ((r.meteran || '') + '\n' + line).trim();
+  }
+  return { recognized: true, wo_code, report: r };
+}
+
+function applyParsedReport(wo, report, rawText) {
+  wo.report = report;
+  wo.report_raw = rawText || reportRawText(wo, report);
+  wo.status = 'done';
+  wo.done_at = new Date().toISOString();
+  return wo;
+}
+
 function mockAdd(parsed) {
   const nextId = Math.max(...MOCK_ITEMS.map(w => w.id)) + 1;
   const wo = { id: nextId, wo_code: parsed.wo_code, wo_date: parsed.wo_date || null,
@@ -239,20 +319,31 @@ function reportRawText(wo, r) {
     r.status_report ? `Status : ${r.status_report}` : '',
     r.report_date ? `Tanggal : ${r.report_date}` : '',
     r.pic_teknisi ? `PIC Teknisi : ${r.pic_teknisi}` : '',
+    r.pic_pendamping ? `PIC Pendamping : ${r.pic_pendamping}` : '',
     r.start ? `Start : ${r.start}` : '',
-    r.finish ? `Finish : ${r.finish}` : ''
+    r.finish ? `Finish : ${r.finish}` : '',
+    r.tarik ? `Tarik : ${r.tarik}` : '',
+    r.aktivasi ? `Aktivasi : ${r.aktivasi}` : '',
+    r.meteran ? `Meteran :\n${r.meteran}` : '',
+    r.splitter ? `Splitter :\n${r.splitter}` : '',
+    r.splicer ? `Splicer :\n${r.splicer}` : '',
+    r.sn_ont ? `SN ONT : ${r.sn_ont}` : '',
+    r.username ? `Username : ${r.username}` : '',
+    r.password ? `Password : ${r.password}` : ''
   ].filter(Boolean);
   const list = (label, arr) => (arr && arr.length ? [label, ...arr.map(x => `- ${x}`)] : []);
   return head.concat(body,
-    list('Case :', r.case), list('Action :', r.action), list('Solution :', r.solution))
+    list('Case :', r.case), list('Action :', r.action), list('Solution :', r.solution),
+    list('Alat Terpasang :', r.alat_terpasang))
     .join('\n');
 }
 
 function mockSaveReport(id, report) {
   const wo = MOCK_ITEMS.find(w => w.id === id);
   if (!wo) throw Object.assign(new Error('WO tidak ditemukan'), { detail: 'WO tidak ditemukan' });
+  const prev = wo.report_raw;
   wo.report = report;
-  wo.report_raw = reportRawText(wo, report);
+  wo.report_raw = prev || reportRawText(wo, report);
   return wo;
 }
 
@@ -277,7 +368,7 @@ async function submitRaw(text) {
 async function saveReport(id, report) {
   if (State.mode === 'live') {
     const wo = State.items.find(w => w.id === id) || {};
-    const raw = reportRawText(wo, report);
+    const raw = wo.report_raw || reportRawText(wo, report);
     return API.report(id, { report, report_raw: raw });
   }
   return mockSaveReport(id, report);
@@ -307,7 +398,8 @@ function listChips(arr, cls = 'chip') {
 
 function actionButton(wo) {
   if (wo.status === 'done') {
-    return `<button class="btn ghost" data-action="report" data-id="${wo.id}">Lihat Report</button>`;
+    return `<button class="btn ghost" data-action="report-form" data-id="${wo.id}">Edit Report</button>
+<button class="btn ghost" data-action="report" data-id="${wo.id}">Lihat Report</button>`;
   }
   if (wo.status === 'menunggu_verifikasi') {
     if (wo.report) {
@@ -315,7 +407,8 @@ function actionButton(wo) {
 <button class="btn ghost" data-action="report" data-id="${wo.id}">Lihat Report</button>
 <button class="btn primary" data-action="transition" data-id="${wo.id}" data-status="done">Selesai</button>`;
     }
-    return `<button class="btn primary" data-action="report-form" data-id="${wo.id}">Isi Report</button>`;
+    return `<button class="btn primary" data-action="report-form" data-id="${wo.id}">Isi Report</button>
+<button class="btn ghost" data-action="paste-report" data-id="${wo.id}">Paste Report</button>`;
   }
   const next = NEXT_STATUS[wo.status];
   const label = { dikerjakan: 'Mulai', menunggu_verifikasi: 'Minta Verifikasi', done: 'Selesai' }[next] || 'Lanjut';
@@ -447,6 +540,7 @@ function bindEvents() {
       }
       if (btn.dataset.action === 'report') { openReport(id); return; }
       if (btn.dataset.action === 'report-form') { openReportForm(id); return; }
+      if (btn.dataset.action === 'paste-report') { openPasteReport(id); return; }
     }
     const card = e.target.closest('.card');
     if (card && !e.target.closest('a')) openDetail(Number(card.dataset.id));
@@ -480,22 +574,63 @@ function bindEvents() {
     if (e.target === $('report-form-overlay')) $('report-form-overlay').classList.add('hidden');
   });
   $('report-form-save').addEventListener('click', async () => {
-    const status = $('rf-status').value.trim();
-    if (!status) { showToast('Status Report wajib diisi', 'error'); return; }
+    const status = $('rf-status').value.trim();    if (!status) { showToast('Status Report wajib diisi', 'error'); return; }
+    const prev = (State.items.find(w => w.id === reportFormId) || {}).report || {};
     const report = {
+      ...prev,
       status_report: status,
       case: $('rf-case').value.split('\n').map(s => s.trim()).filter(Boolean),
       action: $('rf-action').value.split('\n').map(s => s.trim()).filter(Boolean),
       solution: $('rf-solution').value.split('\n').map(s => s.trim()).filter(Boolean),
       pic_teknisi: $('rf-pic').value.trim() || null,
+      pic_pendamping: $('rf-pic-pendamping').value.trim() || null,
       report_date: $('rf-date').value || null,
       start: $('rf-start').value || null,
-      finish: $('rf-finish').value || null
+      finish: $('rf-finish').value || null,
+      tarik: $('rf-tarik').value.trim() || null,
+      aktivasi: $('rf-aktivasi').value.trim() || null,
+      sn_ont: $('rf-sn').value.trim() || null,
+      username: $('rf-username').value.trim() || null,
+      password: $('rf-password').value.trim() || null,
+      meteran: $('rf-meteran').value.trim() || null,
+      splitter: $('rf-splitter').value.trim() || null,
+      alat_terpasang: $('rf-alat').value.split('\n').map(s => s.trim()).filter(Boolean),
+      splicer: $('rf-splicer').value.trim() || null
     };
     try {
       await saveReport(reportFormId, report);
       showToast('Report tersimpan');
       $('report-form-overlay').classList.add('hidden');
+      await renderAll();
+    } catch (err) {
+      showToast(err.detail || err.message, 'error');
+    }
+  });
+  $('paste-report-cancel').addEventListener('click', () => $('paste-report-overlay').classList.add('hidden'));
+  $('paste-report-overlay').addEventListener('click', (e) => {
+    if (e.target === $('paste-report-overlay')) $('paste-report-overlay').classList.add('hidden');
+  });
+  $('paste-report-save').addEventListener('click', async () => {
+    const text = $('paste-text').value.trim();
+    if (!text) { showToast('Teks kosong', 'error'); return; }
+    // Validasi wo_code cocok dengan kartu SEBELUM mutasi (demo & live)
+    const parsed = parseReportDemo(text);
+    if (!parsed.recognized) { showToast(`Tidak dikenali: ${parsed.reason || ''}`, 'error'); return; }
+    const wo = State.items.find(w => w.id === pasteReportId);
+    if (!wo) { showToast('WO tidak ditemukan', 'error'); return; }
+    if (parsed.wo_code !== wo.wo_code) {
+      showToast(`Kode WO tidak cocok: ${parsed.wo_code}`, 'error');
+      return;
+    }
+    try {
+      if (State.mode === 'live') {
+        await API.report(wo.id, { report: parsed.report, report_raw: text });
+        await API.transition(wo.id, 'done');
+      } else {
+        applyParsedReport(wo, parsed.report, text);
+      }
+      showToast('Report tersimpan — WO selesai');
+      $('paste-report-overlay').classList.add('hidden');
       await renderAll();
     } catch (err) {
       showToast(err.detail || err.message, 'error');
@@ -517,12 +652,33 @@ function openReportForm(id) {
   $('rf-status').value = r.status_report || 'Cleared';
   $('rf-date').value = r.report_date || new Date().toISOString().slice(0, 10);
   $('rf-pic').value = r.pic_teknisi || '';
+  $('rf-pic-pendamping').value = r.pic_pendamping || '';
   $('rf-start').value = r.start || '';
   $('rf-finish').value = r.finish || '';
+  $('rf-tarik').value = r.tarik || '';
+  $('rf-aktivasi').value = r.aktivasi || '';
+  $('rf-sn').value = r.sn_ont || '';
+  $('rf-username').value = r.username || '';
+  $('rf-password').value = r.password || '';
   $('rf-case').value = (r.case || []).join('\n');
   $('rf-action').value = (r.action || []).join('\n');
   $('rf-solution').value = (r.solution || []).join('\n');
+  $('rf-meteran').value = r.meteran || '';
+  $('rf-splitter').value = r.splitter || '';
+  $('rf-alat').value = (r.alat_terpasang || []).join('\n');
+  $('rf-splicer').value = r.splicer || '';
   $('report-form-overlay').classList.remove('hidden');
+}
+
+let pasteReportId = null;
+
+function openPasteReport(id) {
+  const wo = State.items.find(w => w.id === id);
+  if (!wo) return;
+  pasteReportId = id;
+  $('paste-report-wo').innerHTML = `<span>WO</span><span class="mono">${escapeHTML(wo.wo_code)} — ${escapeHTML(wo.customer_name || '')}</span>`;
+  $('paste-text').value = '';
+  $('paste-report-overlay').classList.remove('hidden');
 }
 
 function modalHTML(wo, showRaw) {

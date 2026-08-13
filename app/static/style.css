@@ -97,6 +97,7 @@ body {
 .modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus { outline: none; border-color: var(--accent); }
 .modal-body textarea { width: 100%; font-family: ui-monospace, Consolas, monospace; resize: vertical; }
 #report-form-wo { margin-bottom: 4px; }
+p.dim { color: var(--text-dim); font-size: 13px; margin: 6px 0; }
 
 /* report */
 .report-list { margin: 4px 0 10px; padding-left: 18px; }

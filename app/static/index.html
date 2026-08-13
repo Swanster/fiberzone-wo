@@ -87,11 +87,29 @@
         <label>PIC Teknisi
           <input type="text" id="rf-pic" placeholder="nama teknisi">
         </label>
+        <label>PIC Pendamping
+          <input type="text" id="rf-pic-pendamping" placeholder="nama pendamping">
+        </label>
         <label>Start
           <input type="time" id="rf-start">
         </label>
         <label>Finish
           <input type="time" id="rf-finish">
+        </label>
+        <label>Tarik
+          <input type="text" id="rf-tarik" placeholder="ok / -">
+        </label>
+        <label>Aktivasi
+          <input type="text" id="rf-aktivasi" placeholder="ok / -">
+        </label>
+        <label>SN ONT
+          <input type="text" id="rf-sn" placeholder="ALCLB...">
+        </label>
+        <label>Username
+          <input type="text" id="rf-username">
+        </label>
+        <label>Password
+          <input type="text" id="rf-password">
         </label>
       </div>
       <label>Case <span class="dim">(satu item per baris)</span>
@@ -103,7 +121,34 @@
       <label>Solution <span class="dim">(satu item per baris)</span>
         <textarea id="rf-solution" rows="3" placeholder="- solusi akhir"></textarea>
       </label>
+      <label>Meteran <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-meteran" rows="2" placeholder="Tarikan awal - meter"></textarea>
+      </label>
+      <label>Splitter <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-splitter" rows="2" placeholder="SOLITER / FADPS-FDT10-FAT0"></textarea>
+      </label>
+      <label>Alat Terpasang <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-alat" rows="3" placeholder="- Patchcore Biru 1 Pcs"></textarea>
+      </label>
+      <label>Splicer <span class="dim">(satu item per baris)</span>
+        <textarea id="rf-splicer" rows="2" placeholder="Said : Likkho"></textarea>
+      </label>
       <button id="report-form-save" class="btn primary">Simpan Report</button>
+    </div>
+  </div>
+</div>
+
+<div id="paste-report-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Paste Report (dari chat)</h2>
+      <button id="paste-report-cancel" class="modal-x" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="paste-report-wo" class="kw"><span></span><span></span></div>
+      <p class="dim">Tempel teks report dari chat. WO akan langsung <strong>done</strong> dan report bisa diedit setelahnya.</p>
+      <textarea id="paste-text" rows="14" placeholder="Repot pasang baru&#10;&#10;WO/260810/P01/...&#10;..."></textarea>
+      <button id="paste-report-save" class="btn primary">Simpan & Selesai</button>
     </div>
   </div>
 </div>

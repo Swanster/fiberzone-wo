@@ -49,6 +49,7 @@
 | T-025 | Toast notification | ✅ Done | T-025 | 15 min | Should |
 | T-026 | Status transition UI | ✅ Done | T-026 | 15 min | Must |
 | T-027 | Add & View details | ✅ Done | T-027 | 20 min | Should |
+| T-037 | Paste report dari chat (parser + auto done + edit post-done) | ✅ Done | T-037 | 45 min | Should |
 | T-028 | CLI add command | ✅ Done | T-028 | 25 min | Must |
 | T-029 | CLI move command | ✅ Done | T-029 | 20 min | Must |
 | T-030 | CLI list command | ✅ Done | T-030 | 15 min | Must |
@@ -67,10 +68,10 @@
 |---|---|---|---|
 | Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
 | Fase 1 (Parallel Core) | 8 tasks | 8 ✅ | **100%** |
-| Fase 2 (Integration) | 19 tasks | 9 ✅ | **47%** |
+| Fase 2 (Integration) | 20 tasks | 10 ✅ | **50%** |
 | Fase 3 (Validation) | — | 0 | **0%** |
 
-**Overall:** 34/58 tasks complete (59%)
+**Overall:** 35/59 tasks complete (59%)
 
 > **Catatan koreksi (2026-08-12):** Dokumen baseline menandai seluruh task sebagai Done, tetapi pada kenyataannya hanya frontend (T-019–T-027) yang baru benar-benar diimplementasikan (commit `dca66d0`). Task T-010–T-018 (parser & API backend) dan T-028–T-036 (CLI & testing) **belum ada kodenya** — status akan dikoreksi/diisi saat fase backend & CLI dikerjakan.
 
@@ -124,6 +125,12 @@
 | T-025 | Toast notification | Implement toast system |
 | T-026 | Status transition UI | Tombol pindah status |
 | T-027 | Add & View details | UI untuk menambah WO baru |
+
+### Paste Report dari Chat (T-037)
+
+| ID | Title | Description |
+|---|---|---|
+| T-037 | Paste report dari chat | Tombol `Paste Report` di kartu Menunggu Verifikasi; `parseReportDemo` (regex toleran PRD §7.4); validasi wo_code cocok kartu; paste → report + `report_raw` teks asli + status done; form diperluas field teknis; edit report post-done (merge, raw dipertahankan) |
 
 ### CLI (T-028–T-031)
 
