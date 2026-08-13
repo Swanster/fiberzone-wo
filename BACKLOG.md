@@ -31,15 +31,15 @@
 | T-007 | DEVLOG.md baseline | ✅ Done | T-007 | 5 min | Must |
 | T-008 | Environment config (.env.example) | ✅ Done | T-008 | 10 min | Must |
 | T-009 | CI/CD pipeline (GitHub Actions) | ✅ Done | T-009 | 20 min | Must |
-| T-010 | Parser engine (6 formats) | ✅ Done | T-010 | 45 min | Must |
-| T-011 | Parser test (6 formats + edge case) | ✅ Done | T-011 | 20 min | Must |
-| T-012 | Parser edge case tests | ✅ Done | T-012 | 15 min | Must |
-| T-013 | Parser integration test | ✅ Done | T-013 | 15 min | Must |
-| T-014 | API CRUD endpoints | ✅ Done | T-014 | 30 min | Must |
-| T-015 | Report parsing endpoint | ✅ Done | T-015 | 25 min | Must |
-| T-016 | Filter & search API | ✅ Done | T-016 | 20 min | Must |
-| T-017 | Status transition API | ✅ Done | T-017 | 20 min | Must |
-| T-018 | Health check endpoint | ✅ Done | T-018 | 5 min | Must |
+| T-010 | Parser engine (6 formats) | ✅ Done | 6a09ca2 | 45 min | Must |
+| T-011 | Parser test (6 formats + edge case) | ✅ Done | 6a09ca2 | 20 min | Must |
+| T-012 | Parser edge case tests | ✅ Done | 6a09ca2 | 15 min | Must |
+| T-013 | Parser integration test | ✅ Done | 6a09ca2 | 15 min | Must |
+| T-014 | API CRUD endpoints | ✅ Done | 6a09ca2 | 30 min | Must |
+| T-015 | Report parsing endpoint | ✅ Done | 6a09ca2 | 25 min | Must |
+| T-016 | Filter & search API | ✅ Done | 6a09ca2 | 20 min | Must |
+| T-017 | Status transition API | ✅ Done | 6a09ca2 | 20 min | Must |
+| T-018 | Health check endpoint | ✅ Done | 6a09ca2 | 5 min | Must |
 | T-019 | HTML dashboard layout | ✅ Done | T-019 | 40 min | Must |
 | T-020 | CSS styling | ✅ Done | T-020 | 15 min | Must |
 | T-021 | JavaScript logic | ✅ Done | T-021 | 30 min | Must |
@@ -50,15 +50,15 @@
 | T-026 | Status transition UI | ✅ Done | T-026 | 15 min | Must |
 | T-027 | Add & View details | ✅ Done | T-027 | 20 min | Should |
 | T-037 | Paste report dari chat (parser + auto done + edit post-done) | ✅ Done | T-037 | 45 min | Should |
-| T-028 | CLI add command | ✅ Done | T-028 | 25 min | Must |
-| T-029 | CLI move command | ✅ Done | T-029 | 20 min | Must |
-| T-030 | CLI list command | ✅ Done | T-030 | 15 min | Must |
-| T-031 | CLI report command | ✅ Done | T-031 | 15 min | Should |
-| T-032 | Parser test (all formats) | ✅ Done | T-032 | 20 min | Must |
-| T-033 | API CRUD test | ✅ Done | T-033 | 25 min | Must |
-| T-034 | Integration test | ✅ Done | T-034 | 25 min | Must |
-| T-035 | Edge case test | ✅ Done | T-035 | 15 min | Must |
-| T-036 | Performance test | ✅ Done | T-036 | 10 min | Should |
+| T-028 | CLI add command | ✅ Done | 6a09ca2 | 25 min | Must |
+| T-029 | CLI move command | ✅ Done | 6a09ca2 | 20 min | Must |
+| T-030 | CLI list command | ✅ Done | 6a09ca2 | 15 min | Must |
+| T-031 | CLI report command | ✅ Done | 6a09ca2 | 15 min | Should |
+| T-032 | Parser test (all formats) | ✅ Done | 6a09ca2 | 20 min | Must |
+| T-033 | API CRUD test | ✅ Done | 6a09ca2 | 25 min | Must |
+| T-034 | Integration test | ✅ Done | 6a09ca2 | 25 min | Must |
+| T-035 | Edge case test | ✅ Done | 6a09ca2 | 15 min | Must |
+| T-036 | Performance test | ✅ Done | 6a09ca2 | 10 min | Should |
 
 ---
 
@@ -68,12 +68,14 @@
 |---|---|---|---|
 | Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
 | Fase 1 (Parallel Core) | 8 tasks | 8 ✅ | **100%** |
-| Fase 2 (Integration) | 20 tasks | 10 ✅ | **50%** |
-| Fase 3 (Validation) | — | 0 | **0%** |
+| Fase 2 (Integration) | 20 tasks | 20 ✅ | **100%** |
+| Fase 3 (Validation) | 5 tasks | 5 ✅ | **100%** |
 
-**Overall:** 35/59 tasks complete (59%)
+**Overall:** 42/42 tasks complete (100%)
 
 > **Catatan koreksi (2026-08-12):** Dokumen baseline menandai seluruh task sebagai Done, tetapi pada kenyataannya hanya frontend (T-019–T-027) yang baru benar-benar diimplementasikan (commit `dca66d0`). Task T-010–T-018 (parser & API backend) dan T-028–T-036 (CLI & testing) **belum ada kodenya** — status akan dikoreksi/diisi saat fase backend & CLI dikerjakan.
+>
+> **Update (2026-08-13):** Backend + CLI + tests selesai diimplementasikan dan terintegrasi — commit `6a09ca2`. Verifikasi live: uvicorn di port 8600, mode live dashboard, transisi status + gate done (422 tanpa report), PUT report, paste report → auto done, search/filter, 30/30 test pass.
 
 ---
 

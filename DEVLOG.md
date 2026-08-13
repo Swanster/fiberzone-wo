@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-08-13 — Fase 1 & 3 — Backend FastAPI + CLI + Tests (Integrasi Live)
+
+**Commit:** `6a09ca2`
+**Files:** `app/__init__.py`, `app/db.py`, `app/parser.py`, `app/main.py`, `app/api/wo.py`, `app/cli.py`, `tests/test_parser.py`, `tests/test_api.py`, `requirements.txt`, `.env.example`, `.github/workflows/ci.yml`, `BACKLOG.md`, `ROADMAP.md`
+
+### What
+- **Backend FastAPI + SQLite** (PRD Opsi A): `db.py` schema §9.5 (WAL, JSON cols, filter/search LIKE), parser Python 6 format WO + report toleran (strip U+200E/U+200F/U+200B/U+FEFF, unknown key → `extra`, prioritas key:value → header section → bullet), router `/api/wo` persis contract frontend (`GET /api/wo` list/filter/search/limit, `GET /{id}`, `POST /raw` WO/report, `POST /{id}/status`, `PUT /{id}/report`, `DELETE /{id}`), `GET /api/health`, static mount + root dashboard, port 8600 uvicorn.
+- **Gate done wajib backend** (422 "Report wajib diisi…"), transisi forward-only + 422, timestamp `started_at/verification_at/done_at`, report match → auto done (PRD §3/§8).
+- **CLI** (PRD §9.4): `python -m app.cli add|move|list|report` — seed data nyata dipakai untuk verifikasi live (4 WO).
+- **Tests 30/30 pass** (parser 6 format + edge; API contract via TestClient, FZWO_DB tmp).
+- **Verifikasi browser live end-to-end**: health probe → **mode live** (banner demo hilang), tab counts asli, form report → `Selesai`, paste report T → auto done (segmen/description/action/solution tersimpan), search `V-DPS` → 1 kartu, filter type T, gate done tanpa report → 422, zero console error.
+
+### Architecture Decisions
+- Backend dibangun **mengikuti contract yang dikunci frontend** — frontend tidak berubah sama sekali.
+- `lifespan` handler (bukan `on_event` deprecated) untuk `init_db`; CLI memanggil `init_db` sendiri (bukan via FastAPI).
+- Parser: `Segmen`/`Description` (report T) disimpan sebagai field; unknown key tetap masuk `extra` lalu di-pop saat simpan DB.
+- CI: `FZWO_DB=$(mktemp -u).db` → jalankan `pytest -q` (PEP 668 → venv lokal).
+
+### Bugs fixed
+- `parse_wo` tidak menyimpan `wo_code` → `KeyError` di API (serializer).
+- Format T (troubleshoot): baris description salah ditangkap sebagai phone → aturan phone = regex numerik.
+- CLI `add` argumen `text/path` terbalik → stdin selalu kosong.
+- CLI tanpa `init_db()` → `no such table`.
+- Mount `/app/static` tanpa `html=True` → bare path 404.
+
+### Sub-agent
+- **Main session** (backend + tests + integrasi)
+
+### Commit
+- Status: [Done]
+
+---
+
 ## 2026-08-13 — Fase 2 — Paste Report dari Chat (Telegram)
 
 **Commit:** `9eb71db`

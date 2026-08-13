@@ -1,8 +1,8 @@
 # ROADMAP — Fiberzone Work Order Dashboard
 
-> **Current Version:** v1.0.0 (Draft)
-> **Last Updated:** 2026-08-12
-> **Status:** [🟡 In Progress]
+> **Current Version:** v1.0.0
+> **Last Updated:** 2026-08-13
+> **Status:** [✅ Selesai]
 > **Repository:** `/home/swanster/project6661/fiberzone-wo`
 > **Version:** 1.0.0
 
@@ -119,9 +119,9 @@
 | Fase | Items | Complete | Progress |
 |---|---|---|---|
 | Fase 0 (Foundation) | 9 tasks | 9 ✅ | **100%** |
-| Fase 1 (Parallel Core) | 8 tasks | 7 ✅ | **~88%** |
-| Fase 2 (Integration) | T-019–T-036 | 9 | **47%** (frontend selesai T-019–T-027; API/CLI/testing menunggu backend) |
-| Fase 3 (Validation) | — | 0 | **0%** |
+| Fase 1 (Parallel Core) | 8 tasks | 8 ✅ | **100%** |
+| Fase 2 (Integration) | 20 tasks | 20 ✅ | **100%** — backend `6a09ca2`, frontend `dca66d0`–`9eb71db`, verifikasi live port 8600 |
+| Fase 3 (Validation) | 5 tasks | 5 ✅ | **100%** — 30/30 test pass |
 
 ---
 
