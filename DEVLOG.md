@@ -35,6 +35,23 @@
 
 ---
 
+## 2026-08-12 — Fase 2 — Input Report di Menunggu Verifikasi
+
+**Commit:** `b45f122`
+**Files:** `app/static/index.html`, `app/static/style.css`, `app/static/app.js`
+
+### What
+- Kartu di tab **Menunggu Verifikasi**: tanpa report hanya tombol `Isi Report`; setelah report terisi → chip "Report terisi" + tombol `Edit Report` / `Lihat Report` / `Selesai` (gate: report wajib sebelum done).
+- Modal form report terstruktur (Status Report wajib, Case/Action/Solution per-baris, PIC Teknisi, Tanggal Laporan, Start/Finish) — bisa diedit sampai done.
+- Simpan report tidak mengubah status; done tetap via tombol `Selesai` (`POST /api/wo/{id}/status`).
+- Contract API baru: `PUT /api/wo/{id}/report` (spec §5) untuk backend.
+- Verifikasi browser penuh: gate tombol, simpan/edit, transisi done, modal report, responsif 360 px, zero console error.
+
+### Commit
+- Status: [Done]
+
+---
+
 ## 2026-08-12 — Baseline (Baseline State)
 
 **Commit:** (New)
