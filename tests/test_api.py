@@ -218,3 +218,22 @@ def test_root_serves_dashboard():
     assert "Fiberzone WO Dashboard" in r.text
     assert client.get("/style.css").status_code == 200
     assert client.get("/app.js").status_code == 200
+
+
+def test_performance_100_plus_wos():
+    """T-036: 120 insert via /raw + list + search dalam batas wajar."""
+    import time
+    t0 = time.monotonic()
+    for i in range(120):
+        r = client.post("/api/wo/raw", json={"text": f"WO/260813/P{i:02d}/FZ-ABP-{4000 + i}_0{i % 10}\nCUST {i}\nJL. TEST NO. {i}\n0812 0000 {i:04d}\n\nPSB BASIC 30Mbps\nTARIK\n\n@teknisi{i}"})
+        assert r.status_code == 200 and r.json()["created"] is True, i
+    insert_el = time.monotonic() - t0
+    t0 = time.monotonic()
+    r = client.get("/api/wo?limit=500")
+    body = r.json()
+    list_el = time.monotonic() - t0
+    assert body["total"] >= 120
+    assert len(body["items"]) >= 120
+    r = client.get("/api/wo?q=FZ-ABP-4017")
+    assert r.json()["total"] == 1
+    assert insert_el < 30 and list_el < 5, (insert_el, list_el)

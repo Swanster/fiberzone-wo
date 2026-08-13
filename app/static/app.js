@@ -215,7 +215,7 @@ function parseReportDemo(text) {
   const r = { status_report: null, case: [], action: [], solution: [], alat_terpasang: [],
     pic_teknisi: null, report_date: null, start: null, finish: null, pic_pendamping: null,
     tarik: null, aktivasi: null, meteran: null, splitter: null, splicer: null,
-    sn_ont: null, username: null, password: null };
+    segmen: null, description: null, sn_ont: null, username: null, password: null };
   let section = null; // case|action|solution|alat|splitter|splicer|solution_plain
   const isSection = line => {
     const l = line.toLowerCase();
@@ -264,6 +264,8 @@ function parseReportDemo(text) {
         continue;
       }
       if (/^sn ont/.test(k)) { r.sn_ont = v || null; continue; }
+      if (/^segmen/.test(k)) { r.segmen = v || null; continue; }
+      if (/^description/.test(k)) { r.description = v || null; continue; }
       if (k === 'username') { r.username = v || null; continue; }
       if (k === 'password') { r.password = v || null; continue; }
       if (/^(said|pas)$/.test(k)) {
