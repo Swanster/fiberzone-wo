@@ -6,11 +6,15 @@ import re
 from datetime import datetime
 
 REPORT_KEYWORDS = (
-    "report maintenance", "repot pasang baru", "report pasang baru",
-    "report troubleshoot", "report dismantle", "report bangun jaringan",
-    "report survey", "report pemeliharaan", "laporan selesai",
+    "report maintenance", "repot maintenance", "repot pasang baru",
+    "report pasang baru", "report troubleshoot", "repot troubleshoot",
+    "report dismantle", "repot dismantle",
+    "report bangun jaringan", "repot bangun jaringan",
+    "report survey", "repot survey", "report surfey", "repot surfey",
+    "report pemeliharaan", "repot pemeliharaan",
+    "laporan selesai",
 )
-WO_CODE_RE = re.compile(r"^WO/(\d{6})/([A-Z])(\d+)/(.+)$")
+WO_CODE_RE = re.compile(r"^WO/(\d{6})/([A-Z])(\d+)(?:/(.*))?$")
 INVISIBLE_RE = re.compile(r"[\u200e\u200f\u200b\ufeff]")
 BULLET_RE = re.compile(r"^[-–•‣]\s*(.*)$")
 KEYVALUE_RE = re.compile(r"^([A-Za-z\s/\.]+?)\s*:\s*(.*)$")
@@ -32,7 +36,7 @@ def parse_wo_code(wo_code: str) -> dict | None:
     except ValueError:
         return None
     return {"wo_date": date.strftime("%Y-%m-%d"),
-            "wo_type": m.group(2), "wo_seq": int(m.group(3)), "identitas": m.group(4)}
+            "wo_type": m.group(2), "wo_seq": int(m.group(3)), "identitas": (m.group(4) or "").strip() or None}
 
 
 def _is_report(text_lines: list[str]) -> bool:
@@ -64,7 +68,8 @@ def parse_wo(text: str) -> dict:
     start = 4 if phone else (3 if len(lines) > 3 else 2)
     body = lines[start:]
 
-    assignees = [w for ln in body for w in re.findall(r"@\S+", ln)]
+    assignees = [w for ln in body for w in re.findall(r"@\S+", ln)
+                 if not re.match(r"@[-\d.,]", w)]
     infra, sharelocation, content = [], None, []
     for ln in body:
         low = ln.lower()
@@ -116,9 +121,9 @@ def _report_section(line: str) -> str | None:
         return "case"
     if re.match(r"^action\s*:", l):
         return "action"
-    if re.match(r"^solution\s*:?\s*$", l) or re.match(r"^solution\s*:", l):
+    if re.match(r"^(solusi|solution)\s*:?\s*$", l) or re.match(r"^(solusi|solution)\s*:", l):
         return "solution"
-    if re.match(r"^alat yang terpasang\s*:?", l):
+    if re.match(r"^(alat yang terpasang|perangkat yang di ?ambil)\s*:?", l):
         return "alat"
     if re.match(r"^soliter\s*/?", l) or l.startswith("splitter"):
         return "splitter"
