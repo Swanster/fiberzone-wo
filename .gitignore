@@ -2,3 +2,7 @@ data/
 __pycache__/
 *.pyc
 .venv/
+venv/
+.env
+wo.db
+.pytest_cache/

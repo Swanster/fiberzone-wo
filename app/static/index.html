@@ -21,9 +21,10 @@
   <button class="tab" data-status="dikerjakan" id="tab-dikerjakan">Dikerjakan <span class="tab-count"></span></button>
   <button class="tab" data-status="menunggu_verifikasi" id="tab-menunggu_verifikasi">Menunggu Verifikasi <span class="tab-count"></span></button>
   <button class="tab" data-status="done" id="tab-done">Done <span class="tab-count"></span></button>
+  <button class="tab" data-status="klien" id="tab-klien">🌐 Data Klien <span class="tab-count"></span></button>
 </nav>
 
-<div class="toolbar">
+<div class="toolbar" id="wo-toolbar">
   <input id="search-input" type="search" placeholder="Cari No. WO, nama, alamat, telepon">
   <select id="type-select">
     <option value="all">Semua Tipe</option>
@@ -38,6 +39,33 @@
 </div>
 
 <main id="cards" class="cards" aria-live="polite"></main>
+
+<div class="toolbar klien-toolbar hidden" id="klien-toolbar">
+  <input id="kq" type="search" placeholder="Cari nama klien, Client ID, FDT / FAT">
+  <select id="kpop"><option value="">Semua POP</option></select>
+  <select id="kfdt"><option value="">Semua FDT</option></select>
+  <select id="kfat"><option value="">Semua FAT</option></select>
+  <select id="kstatus">
+    <option value="">Semua Status</option>
+    <option value="ACTIVE">Aktif</option>
+    <option value="DISCONNECT">Disconnect</option>
+  </select>
+  <select id="ktipe">
+    <option value="">Semua Tipe</option>
+    <option value="CLIENT">Client</option>
+    <option value="MINIFZ">MiniFZ</option>
+    <option value="VSL">Vessel</option>
+    <option value="CLIENT_NOID">Client (no ID)</option>
+  </select>
+  <select id="kview">
+    <option value="klien">Per Klien</option>
+    <option value="struktur">Per FDT / FAT</option>
+  </select>
+  <button id="ksync" class="btn ghost">↻ Sync</button>
+</div>
+<div id="klien-stats" class="chips klien-stats hidden"></div>
+<p id="klien-meta" class="dim klien-meta hidden"></p>
+<main id="klien-cards" class="cards hidden" aria-live="polite"></main>
 
 <div id="toast-container" class="toast-container"></div>
 

@@ -8,7 +8,15 @@ const NEXT_STATUS = {
 };
 const TYPE_LABEL = { P: 'PSB', M: 'Maintenance', T: 'Troubleshoot', D: 'Dismantle', B: 'Bangun Jaringan', S: 'Survey' };
 
-const State = { mode: 'demo', items: [], tab: 'masuk', type: 'all', q: '', timer: null };
+const State = {
+  mode: 'demo', items: [], tab: 'masuk', type: 'all', q: '', timer: null,
+  klien: {
+    loaded: false, items: [], fatSummary: [], summary: null, source: null,
+    syncedAt: null, stale: false, error: null,
+    q: '', pop: '', fdt: '', fat: '', status: '', tipe: '',
+    view: 'klien', openKey: null
+  }
+};
 
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g,
@@ -457,6 +465,11 @@ function renderCounts(items) {
     `<span class="chip">${labels[s]}: <strong>${counts[s]}</strong></span>`).join('');
   document.querySelectorAll('#tabs .tab-count').forEach(el => {
     const st = el.closest('.tab').dataset.status;
+    if (st === 'klien') {
+      const s = State.klien.summary;
+      el.textContent = s ? `(${s.total})` : '';
+      return;
+    }
     el.textContent = `(${counts[st] ?? 0})`;
   });
 }
@@ -512,7 +525,20 @@ function switchTab(status) {
   State.tab = status;
   document.querySelectorAll('#tabs .tab').forEach(t =>
     t.classList.toggle('active', t.dataset.status === status));
-  renderCards(State.items);
+  const isKlien = status === 'klien';
+  $('wo-toolbar').classList.toggle('hidden', isKlien);
+  $('cards').classList.toggle('hidden', isKlien);
+  ['klien-toolbar', 'klien-stats', 'klien-meta', 'klien-cards']
+    .forEach(id => $(id).classList.toggle('hidden', !isKlien));
+  if (isKlien) {
+    if (State.klien.loaded) renderKlien();
+    else fetchKlien().then(renderKlien).catch(err => {
+      State.klien.error = err.detail || err.message;
+      renderKlien();
+    });
+  } else {
+    renderCards(State.items);
+  }
 }
 
 function bindEvents() {
@@ -740,7 +766,174 @@ function openReport(id) {
   $('modal-overlay').classList.remove('hidden');
 }
 
-/* ---------- boot ---------- */
+/* ---------- data klien (FDT/FAT) ---------- */
+
+async function fetchKlien(refresh = false) {
+  const body = await fetchJSON(`/api/data-klien${refresh ? '?refresh=1' : ''}`);
+  const k = State.klien;
+  k.items = Array.isArray(body.items) ? body.items : [];
+  k.fatSummary = Array.isArray(body.fat_summary) ? body.fat_summary : [];
+  k.summary = body.summary || null;
+  k.source = body.source || null;
+  k.syncedAt = body.synced_at_epoch || null;
+  k.stale = !!body.stale;
+  k.error = body.detail || body.error || null;
+  k.loaded = true;
+  populateKlienFilters();
+}
+
+function setOptions(sel, values, placeholder, current) {
+  sel.innerHTML = [`<option value="">${placeholder}</option>`]
+    .concat(values.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`))
+    .join('');
+  sel.value = values.includes(current) ? current : '';
+  return sel.value;
+}
+
+function populateKlienFilters() {
+  const k = State.klien;
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort();
+  k.pop = setOptions($('kpop'), uniq(k.items.map(i => i.pop)), 'Semua POP', k.pop);
+  k.fdt = setOptions($('kfdt'),
+    uniq(k.items.filter(i => !k.pop || i.pop === k.pop).map(i => i.fdt)),
+    'Semua FDT', k.fdt);
+  k.fat = setOptions($('kfat'),
+    uniq(k.items.filter(i => (!k.pop || i.pop === k.pop) && (!k.fdt || i.fdt === k.fdt)).map(i => i.fat)),
+    'Semua FAT', k.fat);
+}
+
+function klienFiltered() {
+  const k = State.klien;
+  const q = k.q.trim().toLowerCase();
+  return k.items.filter(it => {
+    if (k.pop && it.pop !== k.pop) return false;
+    if (k.fdt && it.fdt !== k.fdt) return false;
+    if (k.fat && it.fat !== k.fat) return false;
+    if (k.status && it.status.toUpperCase() !== k.status) return false;
+    if (k.tipe && it.tipe !== k.tipe) return false;
+    if (q && !`${it.nama} ${it.client_id} ${it.fat} ${it.fdt} ${it.pop} ${it.port}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function statusChip(status) {
+  const up = String(status || '').toUpperCase();
+  if (up === 'ACTIVE') return '<span class="chip ok">AKTIF</span>';
+  if (up === 'DISCONNECT') return '<span class="chip warn">DISCONNECT</span>';
+  return `<span class="chip">${escapeHTML(status || '-')}</span>`;
+}
+
+function klienRowHTML(it) {
+  return `<article class="card klien-row">
+    <div class="card-head">
+      <span class="card-title">${escapeHTML(it.nama || '— tanpa nama —')}</span>
+      ${statusChip(it.status)}
+    </div>
+    <div class="field"><strong>${escapeHTML(it.client_id || '—')}</strong>
+      <span class="dim"> · Port ${escapeHTML(it.port || '-')} · ${escapeHTML(it.pop)}</span></div>
+    <div class="chips">
+      <span class="chip">FDT ${escapeHTML(it.fdt || '(tanpa FDT)')}</span>
+      <span class="chip fat">FAT ${escapeHTML(it.fat || '-')}</span>
+      <span class="chip">${escapeHTML(it.tipe)}</span>
+    </div>
+  </article>`;
+}
+
+function klienStructureHTML(list) {
+  const groups = new Map(); // pop -> Map(fdt -> Map(fat -> [items]))
+  for (const it of list) {
+    const pop = it.pop || '-', fdt = it.fdt || '(tanpa FDT)', fat = it.fat || '-';
+    if (!groups.has(pop)) groups.set(pop, new Map());
+    const byFdt = groups.get(pop);
+    if (!byFdt.has(fdt)) byFdt.set(fdt, new Map());
+    const byFat = byFdt.get(fdt);
+    if (!byFat.has(fat)) byFat.set(fat, []);
+    byFat.get(fat).push(it);
+  }
+  const fatMeta = new Map(State.klien.fatSummary.map(f => [`${f.pop}|${f.fat}`, f]));
+  let html = '';
+  for (const [pop, byFdt] of groups) {
+    const popTotal = [...byFdt.values()].reduce((a, m) =>
+      a + [...m.values()].reduce((b, l) => b + l.length, 0), 0);
+    html += `<div class="k-group">
+      <div class="k-group-head">🌐 ${escapeHTML(pop)}
+        <span class="chip">${popTotal} klien · ${byFdt.size} FDT</span></div>`;
+    for (const [fdt, byFat] of byFdt) {
+      const fdtTotal = [...byFat.values()].reduce((a, l) => a + l.length, 0);
+      html += `<div class="k-fdt">
+        <div class="k-fdt-head">🗄 ${escapeHTML(fdt)}
+          <span class="chip">${byFat.size} FAT · ${fdtTotal} klien</span></div>`;
+      for (const [fat, items] of byFat) {
+        const key = `${pop}|${fat}`;
+        const meta = fatMeta.get(`${pop}|${fat}`);
+        const open = State.klien.openKey === key;
+        html += `<div class="k-fat">
+          <button class="k-fat-head${open ? ' open' : ''}" data-fatkey="${escapeHTML(key)}">
+            <span class="k-fat-name">▢ ${escapeHTML(fat)}
+              ${meta ? `<span class="dim">port ${meta.port_terisi}/${meta.total_port} · IN ${escapeHTML(meta.power_in || '-')} · OUT ${escapeHTML(meta.power_out || '-')}</span>` : ''}</span>
+            <span class="chip">${items.length}</span>
+            <span class="k-caret">${open ? '▾' : '▸'}</span>
+          </button>
+          ${open ? `<div class="k-fat-body">${items.map(klienRowHTML).join('')}</div>` : ''}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function renderKlien() {
+  const k = State.klien;
+  const s = k.summary || { total: 0, aktif: 0, disconnect: 0, fdt_count: 0, fat_count: 0, tanpa_fdt: 0 };
+  $('klien-stats').innerHTML = [
+    ['Total Klien', `${k.items.length}`, `dari ${s.total} di sheet`],
+    ['FDT', s.fdt_count, `${s.tanpa_fdt} klien tanpa FDT`],
+    ['FAT', s.fat_count, `unik · ${s.fat_meta_count} baris Ringkasan`],
+    ['Disconnect', s.disconnect, `${s.aktif} aktif`]
+  ].map(([label, value, note]) =>
+    `<span class="chip stat"><strong>${escapeHTML(String(value))}</strong> ${escapeHTML(label)}
+      <span class="dim"> · ${escapeHTML(note)}</span></span>`).join('');
+
+  const list = klienFiltered();
+  const when = k.syncedAt ? new Date(k.syncedAt * 1000) : null;
+  const stamp = when ? `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}` : '—';
+  $('klien-meta').innerHTML = `${list.length} dari ${k.items.length} klien · sync ${stamp}`
+    + (k.stale ? ` · <span class="warn-text">⚠ cache — ${escapeHTML(k.error || 'Sheets belum ter-sync')}</span>` : '')
+    + (k.error && !k.stale ? ` · <span class="warn-text">⚠ ${escapeHTML(k.error)}</span>` : '');
+
+  $('klien-cards').innerHTML = list.length
+    ? (k.view === 'struktur' ? klienStructureHTML(list) : list.map(klienRowHTML).join(''))
+    : `<div class="empty">Tidak ada klien yang cocok dengan filter.</div>`;
+}
+
+function bindKlienEvents() {
+  const rerender = () => renderKlien();
+  $('kq').addEventListener('input', e => { State.klien.q = e.target.value; rerender(); });
+  $('kpop').addEventListener('change', e => { State.klien.pop = e.target.value; State.klien.fdt = ''; State.klien.fat = ''; populateKlienFilters(); rerender(); });
+  $('kfdt').addEventListener('change', e => { State.klien.fdt = e.target.value; State.klien.fat = ''; populateKlienFilters(); rerender(); });
+  $('kfat').addEventListener('change', e => { State.klien.fat = e.target.value; rerender(); });
+  $('kstatus').addEventListener('change', e => { State.klien.status = e.target.value; rerender(); });
+  $('ktipe').addEventListener('change', e => { State.klien.tipe = e.target.value; rerender(); });
+  $('kview').addEventListener('change', e => { State.klien.view = e.target.value; State.klien.openKey = null; rerender(); });
+  $('ksync').addEventListener('click', async () => {
+    try {
+      await fetchKlien(true);
+      renderKlien();
+      showToast('Data klien tersinkron dari Google Sheets');
+    } catch (err) {
+      showToast(err.detail || err.message, 'error');
+    }
+  });
+  $('klien-cards').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-fatkey]');
+    if (!btn) return;
+    const key = btn.dataset.fatkey;
+    State.klien.openKey = State.klien.openKey === key ? null : key;
+    renderKlien();
+  });
+}
 
 async function boot() {
   State.mode = await detectMode();
@@ -751,3 +944,4 @@ async function boot() {
 }
 
 boot();
+bindKlienEvents();

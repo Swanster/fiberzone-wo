@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import db
-from app.api import wo
+from app.api import data_klien, wo
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -24,6 +24,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Fiberzone WO Dashboard", version="1.0.0", lifespan=lifespan)
 
 app.include_router(wo.router)
+app.include_router(data_klien.router)
 
 
 @app.get("/api/health")

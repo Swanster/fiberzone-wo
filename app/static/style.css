@@ -111,6 +111,27 @@ p.dim { color: var(--text-dim); font-size: 13px; margin: 6px 0; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { border-left-color: var(--red); }
 
+/* data klien */
+.klien-stats { max-width: 1200px; margin: 12px auto 0; padding: 0 16px; }
+.klien-stats .chip.stat { font-size: 13px; padding: 6px 12px; }
+.klien-stats .chip.stat strong { font-size: 15px; }
+.klien-meta { max-width: 1200px; margin: 8px auto; padding: 0 16px; font-size: 12px; }
+.klien-meta .warn-text, .dim .warn-text { color: var(--amber); }
+.chip.fat { border-color: var(--purple); color: var(--purple); }
+.chip.warn { border-color: var(--amber); color: var(--amber); }
+.k-group { grid-column: 1 / -1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.k-group-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--bg-elev); font-weight: 700; border-bottom: 1px solid var(--border); }
+.k-fdt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; background: rgba(47, 129, 247, .10); color: var(--blue); font-weight: 600; font-size: 13px; border-top: 1px solid var(--border); }
+.k-fat { border-top: 1px dashed var(--border); }
+.k-fat-head { width: 100%; display: flex; align-items: center; gap: 8px; justify-content: space-between; background: none; border: none; color: var(--text); padding: 8px 14px; cursor: pointer; text-align: left; font-size: 13px; }
+.k-fat-head:hover, .k-fat-head.open { background: rgba(255,255,255,.03); }
+.k-fat-name { display: flex; flex-direction: column; gap: 2px; word-break: break-all; }
+.k-fat-name .dim { font-size: 11px; color: var(--text-dim); }
+.k-caret { color: var(--text-dim); }
+.k-fat-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; padding: 4px 14px 14px; }
+.klien-row { cursor: default; }
+.klien-row:hover { border-color: var(--border); }
+
 @media (max-width: 640px) {
   .toolbar { flex-direction: column; }
   .cards { grid-template-columns: 1fr; }
