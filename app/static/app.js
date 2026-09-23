@@ -14,7 +14,7 @@ const State = {
     loaded: false, items: [], fatSummary: [], summary: null, source: null,
     syncedAt: null, stale: false, error: null,
     q: '', pop: '', fdt: '', fat: '', status: '', tipe: '',
-    view: 'klien', openKey: null
+    view: 'klien', openKey: null, openKeys: []
   }
 };
 
@@ -823,20 +823,32 @@ function statusChip(status) {
   return `<span class="chip">${escapeHTML(status || '-')}</span>`;
 }
 
+function klienKV(label, value, mono = false) {
+  if (value == null || value === '') return '';
+  const cls = mono ? ' class="mono"' : '';
+  return `<div class="kw"><span>${escapeHTML(label)}</span><span${cls}>${escapeHTML(value)}</span></div>`;
+}
+
 function klienRowHTML(it) {
   return `<article class="card klien-row">
     <div class="card-head">
       <span class="card-title">${escapeHTML(it.nama || '— tanpa nama —')}</span>
       ${statusChip(it.status)}
     </div>
-    <div class="field"><strong>${escapeHTML(it.client_id || '—')}</strong>
-      <span class="dim"> · Port ${escapeHTML(it.port || '-')} · ${escapeHTML(it.pop)}</span></div>
-    <div class="chips">
-      <span class="chip">FDT ${escapeHTML(it.fdt || '(tanpa FDT)')}</span>
-      <span class="chip fat">FAT ${escapeHTML(it.fat || '-')}</span>
-      <span class="chip">${escapeHTML(it.tipe)}</span>
+    <div class="klien-id mono">${escapeHTML(it.client_id || '—')}</div>
+    <div class="klien-loc">${escapeHTML(it.pop || '-')} · Port ${escapeHTML(it.port || '-')}</div>
+    <div class="klien-kv">
+      ${klienKV('FDT', it.fdt || '(tanpa FDT)')}
+      ${klienKV('FAT', it.fat || '-')}
+      ${klienKV('Tipe', it.tipe || '-')}
+      ${klienKV('Sumber', it.sumber || '-')}
+      ${klienKV('Via Splitter', it.via_splitter || '-')}
     </div>
   </article>`;
+}
+
+function klienNorm(s) {
+  return String(s || '').trim().toLowerCase();
 }
 
 function klienStructureHTML(list) {
@@ -850,31 +862,62 @@ function klienStructureHTML(list) {
     if (!byFat.has(fat)) byFat.set(fat, []);
     byFat.get(fat).push(it);
   }
-  const fatMeta = new Map(State.klien.fatSummary.map(f => [`${f.pop}|${f.fat}`, f]));
+  const fatMeta = new Map(State.klien.fatSummary.map(f =>
+    [`${klienNorm(f.pop)}|${klienNorm(f.fat)}`, f]));
+  const openSet = new Set(State.klien.openKeys || []);
+  const sortAZ = (a, b) => String(a).localeCompare(String(b), 'id');
   let html = '';
-  for (const [pop, byFdt] of groups) {
-    const popTotal = [...byFdt.values()].reduce((a, m) =>
-      a + [...m.values()].reduce((b, l) => b + l.length, 0), 0);
+  for (const [pop, byFdt] of [...groups.entries()].sort((a, b) => sortAZ(a[0], b[0]))) {
+    let popTotal = 0, popDisc = 0;
+    for (const byFat of byFdt.values()) for (const l of byFat.values()) {
+      popTotal += l.length;
+      popDisc += l.filter(i => String(i.status || '').toUpperCase() === 'DISCONNECT').length;
+    }
     html += `<div class="k-group">
-      <div class="k-group-head">🌐 ${escapeHTML(pop)}
-        <span class="chip">${popTotal} klien · ${byFdt.size} FDT</span></div>`;
-    for (const [fdt, byFat] of byFdt) {
-      const fdtTotal = [...byFat.values()].reduce((a, l) => a + l.length, 0);
+      <div class="k-group-head"><span>🌐 ${escapeHTML(pop)}</span>
+        <span class="k-sub"><span class="chip">${popTotal} klien · ${byFdt.size} FDT</span>`
+      + (popDisc ? `<span class="chip warn">${popDisc} disconnect</span>` : '')
+      + `</span></div>`;
+    for (const [fdt, byFat] of [...byFdt.entries()].sort((a, b) => sortAZ(a[0], b[0]))) {
+      let fdtTotal = 0, fdtDisc = 0;
+      for (const l of byFat.values()) {
+        fdtTotal += l.length;
+        fdtDisc += l.filter(i => String(i.status || '').toUpperCase() === 'DISCONNECT').length;
+      }
       html += `<div class="k-fdt">
-        <div class="k-fdt-head">🗄 ${escapeHTML(fdt)}
-          <span class="chip">${byFat.size} FAT · ${fdtTotal} klien</span></div>`;
-      for (const [fat, items] of byFat) {
-        const key = `${pop}|${fat}`;
-        const meta = fatMeta.get(`${pop}|${fat}`);
-        const open = State.klien.openKey === key;
+        <div class="k-fdt-head"><span>🗄 ${escapeHTML(fdt)}</span>
+          <span class="k-sub"><span class="chip">${byFat.size} FAT · ${fdtTotal} klien</span>`
+        + (fdtDisc ? `<span class="chip warn">${fdtDisc} disconnect</span>` : '')
+        + `</span></div>`;
+      for (const [fat, items] of [...byFat.entries()].sort((a, b) => sortAZ(a[0], b[0]))) {
+        const key = `${pop}|${fdt}|${fat}`;
+        const meta = fatMeta.get(`${klienNorm(pop)}|${klienNorm(fat)}`);
+        const open = openSet.has(key);
+        const disc = items.filter(i => String(i.status || '').toUpperCase() === 'DISCONNECT').length;
+        const aktif = items.filter(i => String(i.status || '').toUpperCase() === 'ACTIVE').length;
+        const sorted = [...items].sort((a, b) => sortAZ(a.nama, b.nama));
+        let metaHTML = `<span class="k-fat-sub"><span>${items.length} klien</span>`
+          + (aktif ? `<span>· ${aktif} aktif</span>` : '')
+          + (disc ? `<span>· ${disc} disconnect</span>` : '') + `</span>`;
+        if (meta) {
+          const pct = meta.total_port > 0
+            ? Math.max(0, Math.min(100, Math.round(meta.port_terisi / meta.total_port * 100))) : 0;
+          const koor = (meta.koordinat || '').trim();
+          const maps = koor ? ` · <a href="https://www.google.com/maps/search/${encodeURIComponent(koor)}" target="_blank" rel="noopener">📍 ${escapeHTML(koor)}</a>` : '';
+          metaHTML = `<span class="k-fat-sub"><span>port ${meta.port_terisi}/${meta.total_port} (${pct}%)</span>`
+            + `<span>IN ${escapeHTML(meta.power_in || '-')} · OUT ${escapeHTML(meta.power_out || '-')}</span>`
+            + `<span>${items.length} klien`
+            + (aktif ? ` · ${aktif} aktif` : '') + (disc ? ` · ${disc} disconnect` : '') + `</span>${maps}</span>`
+            + `<span class="k-progress"><i style="width:${pct}%"></i></span>`;
+        }
         html += `<div class="k-fat">
           <button class="k-fat-head${open ? ' open' : ''}" data-fatkey="${escapeHTML(key)}">
-            <span class="k-fat-name">▢ ${escapeHTML(fat)}
-              ${meta ? `<span class="dim">port ${meta.port_terisi}/${meta.total_port} · IN ${escapeHTML(meta.power_in || '-')} · OUT ${escapeHTML(meta.power_out || '-')}</span>` : ''}</span>
-            <span class="chip">${items.length}</span>
-            <span class="k-caret">${open ? '▾' : '▸'}</span>
+            <span class="k-fat-name">▢ ${escapeHTML(fat)}</span>
+            <span class="k-fat-meta">${metaHTML}</span>
+            <span class="k-fat-right"><span class="chip">${items.length}</span>
+            <span class="k-caret">${open ? '▾' : '▸'}</span></span>
           </button>
-          ${open ? `<div class="k-fat-body">${items.map(klienRowHTML).join('')}</div>` : ''}
+          ${open ? `<div class="k-fat-body">${sorted.map(klienRowHTML).join('')}</div>` : ''}
         </div>`;
       }
       html += `</div>`;
@@ -904,7 +947,12 @@ function renderKlien() {
     + (k.error && !k.stale ? ` · <span class="warn-text">⚠ ${escapeHTML(k.error)}</span>` : '');
 
   $('klien-cards').innerHTML = list.length
-    ? (k.view === 'struktur' ? klienStructureHTML(list) : list.map(klienRowHTML).join(''))
+    ? (k.view === 'struktur' ? klienStructureHTML(list) : [...list]
+      .sort((a, b) => String(a.pop || '').localeCompare(String(b.pop || ''), 'id')
+        || String(a.fdt || '').localeCompare(String(b.fdt || ''), 'id')
+        || String(a.fat || '').localeCompare(String(b.fat || ''), 'id')
+        || String(a.nama || '').localeCompare(String(b.nama || ''), 'id'))
+      .map(klienRowHTML).join(''))
     : `<div class="empty">Tidak ada klien yang cocok dengan filter.</div>`;
 }
 
@@ -916,7 +964,7 @@ function bindKlienEvents() {
   $('kfat').addEventListener('change', e => { State.klien.fat = e.target.value; rerender(); });
   $('kstatus').addEventListener('change', e => { State.klien.status = e.target.value; rerender(); });
   $('ktipe').addEventListener('change', e => { State.klien.tipe = e.target.value; rerender(); });
-  $('kview').addEventListener('change', e => { State.klien.view = e.target.value; State.klien.openKey = null; rerender(); });
+  $('kview').addEventListener('change', e => { State.klien.view = e.target.value; State.klien.openKey = null; State.klien.openKeys = []; rerender(); });
   $('ksync').addEventListener('click', async () => {
     try {
       await fetchKlien(true);
@@ -930,7 +978,12 @@ function bindKlienEvents() {
     const btn = e.target.closest('button[data-fatkey]');
     if (!btn) return;
     const key = btn.dataset.fatkey;
-    State.klien.openKey = State.klien.openKey === key ? null : key;
+    const keys = Array.isArray(State.klien.openKeys) ? State.klien.openKeys : [];
+    const i = keys.indexOf(key);
+    if (i >= 0) keys.splice(i, 1);
+    else keys.push(key);
+    State.klien.openKeys = keys;
+    State.klien.openKey = keys.length ? keys[keys.length - 1] : null;
     renderKlien();
   });
 }
