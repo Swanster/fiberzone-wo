@@ -301,3 +301,23 @@ Status : Cleared.
     assert d["recognized"] and d["kind"] == "report"
     assert d["wo_code"] == "WO/260921/B01/BANGUNJARINGAN"
     assert d["report"]["status_report"] == "Cleared."
+
+
+def test_wo_code_glued_with_customer_name():
+    """Baris 'WO/... NAMA' satu baris: kode dipotong sampai token, nama tidak ikut."""
+    text = (
+        "Report Maintenance\n\n"
+        "WO/260919/M01/FZ/LB0117 I PUTU MANIK ADI PUTRA 2\n"
+        "0821 4500 9123\n\n"
+        "Case :\n- Inet tidak jalan\n\n"
+        "Status : Cleared\n"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["wo_code"] == "WO/260919/M01/FZ/LB0117"
+    assert d["report"]["status_report"] == "Cleared"
+
+    # WO biasa (kode sendirian) tetap utuh
+    w = parse_raw("WO/260919/M01/FZ/LB0117\nI PUTU MANIK\nJL. X\n0821 4500 9123\n\nFO CUT\n@user")
+    assert w["recognized"] and w["wo"]["wo_code"] == "WO/260919/M01/FZ/LB0117"
+    assert w["wo"]["customer_name"] == "I PUTU MANIK"

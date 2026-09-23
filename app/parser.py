@@ -15,7 +15,7 @@ REPORT_KEYWORDS = (
     "report pemeliharaan", "repot pemeliharaan",
     "laporan selesai",
 )
-WO_CODE_RE = re.compile(r"^WO/(\d{6})/([A-Z])(\d+)(?:/(.*))?$")
+WO_CODE_RE = re.compile(r"^WO/(\d{6})/([A-Z])(\d+)(?:/([\w./-]+))?")
 INVISIBLE_RE = re.compile(r"[\u200e\u200f\u200b\ufeff]")
 BULLET_RE = re.compile(r"^[-–•‣]\s*(.*)$")
 KEYVALUE_RE = re.compile(r"^([A-Za-z\s/\.]+?)\s*:\s*(.*)$")
@@ -81,7 +81,9 @@ def parse_wo(text: str) -> dict:
         else:
             content.append(ln)
 
-    wo = {"wo_code": lines[0], **head, "customer_name": customer_name, "address": address,
+    m0 = WO_CODE_RE.match(lines[0])
+    assert m0 is not None  # parse_wo_code(lines[0]) sudah cocok — mustahil None
+    wo = {"wo_code": m0.group(0), **head, "customer_name": customer_name, "address": address,
           "phone": phone, "assignees": assignees, "infra": infra,
           "sharelocation": sharelocation, "raw_text": text}
 
@@ -135,9 +137,10 @@ def _report_section(line: str) -> str | None:
 
 def parse_report(text: str) -> dict:
     lines = [ln for ln in _clean_lines(text) if ln]
-    wo_code = next((ln for ln in lines if WO_CODE_RE.match(ln)), None)
-    if not wo_code:
+    m = next((m for m in map(WO_CODE_RE.match, lines) if m), None)
+    if not m:
         return {"recognized": False, "reason": "Tidak ada baris WO/... di teks"}
+    wo_code = m.group(0)
 
     r = {"status_report": None, "case": [], "action": [], "solution": [],
          "alat_terpasang": [], "pic_teknisi": None, "report_date": None,
