@@ -254,3 +254,30 @@ def test_empty_and_garbage():
     assert parse_raw("   \n\n  ")["recognized"] is False
     r = parse_raw("lorem ipsum dolor")
     assert r["recognized"] is False and r["reason"]
+
+
+def test_report_status_typo_staatus():
+    """Typo lapangan 'Staatus : Cleared' harus tetap terbaca sebagai status_report."""
+    text = """Report Pasang Baru
+
+WO/260921/P01/FZ-ABP-3076_01
+SUWANTO
+JL. TUKAD BARU, PEMOGAN, DENPASAR
+0813 5330 6867
+
+Detail laporan :
+Hari / Tanggal : 21 September 2026
+PIC Teknisi : Rhei, Risky
+Start   :
+Finish :
+Total Tarikan : 10 Meter
+TARIK: OK
+AKTIVASI : OK
+
+Staatus : Cleared
+"""
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["report"]["status_report"] == "Cleared"
+    assert d["report"]["report_date"] == "21 September 2026"
+    assert d["report"]["start"] is None

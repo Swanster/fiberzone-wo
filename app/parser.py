@@ -153,7 +153,8 @@ def parse_report(text: str) -> dict:
         if m:
             k = m.group(1).strip().lower()
             v = m.group(2).strip()
-            if re.match(r"^status", k):
+            # "status", typo umum di report lapangan: "staatus"/"staus"
+            if re.match(r"^st(?:aa?)?t?u?s\b", k):
                 r["status_report"] = v or None; continue
             if re.match(r"^hari|tanggal", k):
                 r["report_date"] = v or None; continue
