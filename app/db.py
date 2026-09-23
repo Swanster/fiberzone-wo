@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_DB = Path(__file__).resolve().parent.parent / "data" / "wo.db"
@@ -44,6 +45,15 @@ CREATE TABLE IF NOT EXISTS work_orders (
   started_at TEXT,
   verification_at TEXT,
   done_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pending_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wo_code TEXT NOT NULL,
+  report_json TEXT NOT NULL,
+  report_raw TEXT,
+  reason TEXT,
+  created_at TEXT
 );
 """
 
@@ -172,3 +182,43 @@ def delete_wo(wo_id: int) -> bool:
         cur = conn.execute("DELETE FROM work_orders WHERE id = ?", (wo_id,))
         conn.commit()
     return cur.rowcount > 0
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def save_pending(wo_code: str, report: dict, report_raw: str | None, reason: str) -> int:
+    """Antrian hold: report yang belum bisa dicocokkan. Idempotent per kode+teks."""
+    with get_conn() as conn:
+        conn.execute("DELETE FROM pending_reports WHERE wo_code = ? AND report_raw IS ?",
+                     (wo_code, report_raw))
+        cur = conn.execute(
+            "INSERT INTO pending_reports (wo_code, report_json, report_raw, reason, created_at)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (wo_code, json.dumps(report, ensure_ascii=False), report_raw, reason, _now_iso()))
+        conn.commit()
+        return cur.lastrowid
+
+
+def list_pending() -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM pending_reports ORDER BY id").fetchall()
+    return [{"id": r["id"], "wo_code": r["wo_code"],
+             "report": json.loads(r["report_json"]), "report_raw": r["report_raw"],
+             "reason": r["reason"], "created_at": r["created_at"]} for r in rows]
+
+
+def apply_pending(wo: dict) -> int:
+    """Tempel semua laporan tertahan untuk kode WO ini (urut id → terakhir menang) → done."""
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM pending_reports WHERE wo_code = ? ORDER BY id",
+                            (wo["wo_code"],)).fetchall()
+    for r in rows:
+        update_wo(wo["id"], {"report_json": json.loads(r["report_json"]),
+                             "report_raw": r["report_raw"],
+                             "status": "done", "done_at": _now_iso()})
+        with get_conn() as conn:
+            conn.execute("DELETE FROM pending_reports WHERE id = ?", (r["id"],))
+            conn.commit()
+    return len(rows)

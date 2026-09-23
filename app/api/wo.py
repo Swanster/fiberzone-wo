@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import difflib
+import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
@@ -54,29 +56,61 @@ def get_wo(wo_id: int):
 def raw_wo(payload: RawIn):
     parsed = parser.parse_raw(payload.text or "")
     if not parsed["recognized"]:
+        _log_reject(parsed["reason"], None, payload.text)
         return {"recognized": False, "reason": parsed["reason"]}
     if parsed["kind"] == "wo":
         wo = parsed["wo"]
         existing = db.get_wo_by_code(wo["wo_code"])
         if existing:
+            applied = db.apply_pending(existing)
+            if applied:
+                existing = db.get_wo(existing["id"])
             return {"recognized": True, "wo_code": wo["wo_code"], "wo": existing,
-                    "created": False, "reason": "WO sudah ada, data lama dipertahankan"}
+                    "created": False, "applied_reports": applied,
+                    "reason": "WO sudah ada, data lama dipertahankan"}
         wo.setdefault("status", "masuk")
         wo["created_at"] = _now()
         saved = db.insert_wo(wo)
-        return {"recognized": True, "wo_code": wo["wo_code"], "wo": saved, "created": True}
+        applied = db.apply_pending(saved)
+        if applied:
+            saved = db.get_wo(saved["id"])
+        return {"recognized": True, "wo_code": wo["wo_code"], "wo": saved,
+                "created": True, "applied_reports": applied}
     # report → cocokkan wo_code → done
     code = parsed["wo_code"]
-    wo = db.get_wo_by_code(code)
-    if not wo:
-        return {"recognized": True, "wo_code": code, "matched": False,
-                "reason": "WO tidak ditemukan (unmatched)"}
     report = parsed["report"]
     report.pop("extra", None)
+    wo = db.get_wo_by_code(code)
+    if not wo:
+        # A: tahan di antrian — otomatis ditempel begitu WO-nya masuk
+        db.save_pending(code, report, parsed["report_raw"], "WO tidak ditemukan (unmatched)")
+        cands = _candidates(code)
+        _log_reject("unmatched", code, payload.text)
+        return {"recognized": True, "wo_code": code, "matched": False,
+                "reason": "WO tidak ditemukan (unmatched)",
+                "held": True, "candidates": cands}
     fields = {"report_json": report, "report_raw": parsed["report_raw"],
               "status": "done", "done_at": _now()}
     updated = db.update_wo(wo["id"], fields)
     return {"recognized": True, "wo_code": code, "matched": True, "wo": updated}
+
+
+def _log_reject(reason: str, wo_code: str | None, text: str) -> None:
+    """C: audit penolakan — satu baris JSON di log pm2. Hanya baris PERTAMA teks
+    (header) yang dicatat, tidak pernah isi laporan, agar password SSID/ONT tidak masuk log."""
+    head = next((ln.strip() for ln in (text or "").splitlines() if ln.strip()), "")[:120]
+    print("REJECT " + json.dumps({"ts": _now(), "reason": reason, "wo_code": wo_code,
+                                  "head": head}, ensure_ascii=False), flush=True)
+
+
+def _candidates(wo_code: str, limit: int = 3) -> list[dict]:
+    """B: kode mirip saat unmatched (salah tahun/urutan/tipografi) → saran ke pengirim."""
+    items, _ = db.list_wos(limit=1000)
+    by_code = {w["wo_code"]: w for w in items}
+    close = difflib.get_close_matches(wo_code, list(by_code), n=limit, cutoff=0.6)
+    return [{"id": by_code[c]["id"], "wo_code": c,
+             "customer_name": by_code[c]["customer_name"], "status": by_code[c]["status"]}
+            for c in close]
 
 
 @router.post("/{wo_id}/status")

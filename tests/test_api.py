@@ -1,5 +1,6 @@
 """API tests — PRD §11.2 + contract spec §4/§5 (TestClient, DB temp per-sesi)."""
 
+import json
 import os
 
 import pytest
@@ -237,3 +238,45 @@ def test_performance_100_plus_wos():
     r = client.get("/api/wo?q=FZ-ABP-4017")
     assert r.json()["total"] == 1
     assert insert_el < 30 and list_el < 5, (insert_el, list_el)
+
+
+def test_report_unmatched_held_then_auto_applied():
+    """A: report datang lebih dulu → antrian hold; WO masuk → otomatis ditempel + done."""
+    code = "WO/260924/M07/FZ/BL9997"
+    body = client.post("/api/wo/raw",
+                       json={"text": REPORT_P.replace("WO/260812/P02/FZ-ABP-2957_01", code)}).json()
+    assert body["matched"] is False and body["held"] is True
+    assert any(p["wo_code"] == code for p in db.list_pending())
+
+    wtext = WO_M.replace("WO/260812/M01/FZ/BL0277", code)
+    b = client.post("/api/wo/raw", json={"text": wtext}).json()
+    assert b["created"] is True and b["applied_reports"] == 1
+    assert b["wo"]["status"] == "done"
+    assert b["wo"]["report"]["status_report"] == "Cleared"
+    assert b["wo"]["report_raw"].startswith("Repot pasang baru")
+    assert not any(p["wo_code"] == code for p in db.list_pending())
+
+
+def test_unmatched_returns_similar_candidates():
+    """B: kode mirip (salah urutan/tahun) dikembalikan sebagai kandidat saran."""
+    code = "WO/260924/M08/FZ/BL0888"
+    client.post("/api/wo/raw", json={"text": WO_M.replace("WO/260812/M01/FZ/BL0277", code)})
+    near = code.replace("/M08/", "/M09/")
+    body = client.post("/api/wo/raw",
+                       json={"text": REPORT_P.replace("WO/260812/P02/FZ-ABP-2957_01", near)}).json()
+    assert body["matched"] is False
+    assert any(c["wo_code"] == code for c in body["candidates"])
+    assert all("customer_name" in c and "status" in c for c in body["candidates"])
+
+
+def test_reject_logged_one_json_line_no_secrets(capsys):
+    """C: penolakan dicatat 1 baris JSON — hanya baris pertama (header), tanpa isi laporan."""
+    client.post("/api/wo/raw", json={"text": "asdf qwer zxcv"})
+    client.post("/api/wo/raw", json={"text": REPORT_P})
+    out = capsys.readouterr().out
+    lines = [l for l in out.splitlines() if l.startswith("REJECT ")]
+    assert len(lines) >= 2
+    rec = json.loads(lines[-1][len("REJECT "):])
+    assert rec["reason"] and "wo_code" in rec and rec["head"]
+    assert "Fifiye2170" not in out          # password Said/Pas tidak pernah masuk log
+    assert "SN ONT" not in rec["head"]
