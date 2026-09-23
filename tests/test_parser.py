@@ -281,3 +281,23 @@ Staatus : Cleared
     assert d["report"]["status_report"] == "Cleared"
     assert d["report"]["report_date"] == "21 September 2026"
     assert d["report"]["start"] is None
+
+
+def test_report_header_pembangunan_jaringan():
+    """Header 'REPORT PEMBANGUNAN JARINGAN' harus dikenali sebagai report."""
+    text = """REPORT PEMBANGUNAN JARINGAN
+
+WO/260921/B01/BANGUNJARINGAN
+BANGUN JARINGAN
+JL. TUKAD BARU, DENPASAR
+
+Action :
+- Pasang splitter 1:4
+• INPUT(1:4): -20 dBm
+
+Status : Cleared.
+"""
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["wo_code"] == "WO/260921/B01/BANGUNJARINGAN"
+    assert d["report"]["status_report"] == "Cleared."
