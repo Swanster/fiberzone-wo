@@ -303,6 +303,21 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_section_header_without_colon():
+    """Header 'Case' / 'Action' tanpa titik dua tetap jadi section (bukan hilang)."""
+    text = (
+        "Repot maintenance\n\n"
+        "WO/260914/M01/FZ-ABP-3030_01\nARTINI\n\n"
+        "FO CUT\n"
+        "Case\n- pmbangunan belum selesai\n"
+        "Solusi\n-internet sudah up\n"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["report"]["case"] == ["pmbangunan belum selesai"]
+    assert d["report"]["solution"] == ["internet sudah up"]
+
+
 def test_report_header_instalasi():
     """Header 'REPORT INSTALASI' harus dikenali sebagai report."""
     text = "REPORT INSTALASI\n\nWO/260917/P01/FZ-ABP-3075_01\nRENDRAWATI\n\nPSB Mini Fiberzone upto 15Mbps\n\nTotal Tarikan : 68 Meter\n"

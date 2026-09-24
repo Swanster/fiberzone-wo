@@ -121,9 +121,9 @@ def low_key(ln: str) -> bool:
 
 def _report_section(line: str) -> str | None:
     l = line.lower()
-    if re.match(r"^case\s*:", l):
+    if re.match(r"^case\s*(:.*)?$", l):
         return "case"
-    if re.match(r"^action\s*:", l):
+    if re.match(r"^action\s*(:.*)?$", l):
         return "action"
     if re.match(r"^(solusi|solution)\s*:?\s*$", l) or re.match(r"^(solusi|solution)\s*:", l):
         return "solution"
