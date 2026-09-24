@@ -140,7 +140,7 @@ def _report_section(line: str) -> str | None:
         return "action"
     if re.match(r"^(solusi|solution)\s*:?(\s.*)?$", l) or re.match(r"^(solusi|solution)\s*:", l):
         return "solution"
-    if re.match(r"^(alat yang terpasang|perangkat yang di ?ambil)\s*:?", l):
+    if re.match(r"^(alat yang terpasang|perangkat yang di ?ambil|barang yang di ?(?:ambil|gunakan))\s*:?", l):
         return "alat"
     if re.match(r"^soliter\s*/?", l) or l.startswith("splitter"):
         return "splitter"

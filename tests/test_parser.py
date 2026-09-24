@@ -303,6 +303,21 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_dismantle_barang_diambil():
+    """Report dismantle: header 'Barang yang di ambil' terisi ke alat_terpasang."""
+    text = (
+        "Report Dismantle\n\n"
+        "WO/260923/D01/FZ/BL-0357\nNIRWAN AGUNG TRIONO\n\n"
+        "Barang yang di ambil : \n- 1 Ont \n\n"
+        "Status : Cleared"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    r = d["report"]
+    assert r["status_report"] == "Cleared"
+    assert r["alat_terpasang"] == ["1 Ont"]
+
+
 def test_report_bullet_under_header_sections():
     """Status/Note/Hasil survey yang isinya bullet di baris berikutnya tetap terbaca."""
     text = (
@@ -338,7 +353,8 @@ def test_report_single_line_custom_header():
     assert r["status_report"] == "done"
     assert r["case"] == ["kabel input Splitter [32][33]&[34][35] di sabotase"]
     assert any("Tarik kabel 2 core sepanjang 250m" in a for a in r["action"])
-    assert any("pigtail biru" in a for a in r["action"])
+    assert r["action"][-1] == "Migrasi seluruh pelanggan under splitter yg terdampak ke GPON baru"
+    assert r["alat_terpasang"] == ["Kabel 2 core 250m", "1 buah rokset", "2 buah pigtail biru"]
     assert d["report_raw"] == text  # teks literal tersimpan utuh
 
 
