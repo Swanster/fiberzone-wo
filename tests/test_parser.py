@@ -303,6 +303,25 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_bullet_under_header_sections():
+    """Status/Note/Hasil survey yang isinya bullet di baris berikutnya tetap terbaca."""
+    text = (
+        "Report Maintenance\n\n"
+        "WO/260924/M01/VSLB-00010\nMad Monkey\n\n"
+        "Case awal :\n- router ruijie bermasalah\n\n"
+        "Hasil survey :\n- setelah di cek router ruijie nyala dan aman\n\n"
+        "Status :\n- Cleared\n\n"
+        "Note :\n- perangkat totolink bermasalah\n"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    r = d["report"]
+    assert r["status_report"] == "Cleared"
+    assert r["case"] == ["router ruijie bermasalah"]
+    assert r["survey"] == ["setelah di cek router ruijie nyala dan aman"]
+    assert r["note"] == ["perangkat totolink bermasalah"]
+
+
 def test_report_single_line_custom_header():
     """Report satu baris, header kustom 'Report Gamas', WO menempel di tengah kalimat."""
     text = (

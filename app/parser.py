@@ -134,11 +134,11 @@ def low_key(ln: str) -> bool:
 
 def _report_section(line: str) -> str | None:
     l = line.lower()
-    if re.match(r"^case\s*(:.*)?$", l):
+    if re.match(r"^case\b", l):
         return "case"
-    if re.match(r"^action\s*(:.*)?$", l):
+    if re.match(r"^action\b", l):
         return "action"
-    if re.match(r"^(solusi|solution)\s*:?\s*$", l) or re.match(r"^(solusi|solution)\s*:", l):
+    if re.match(r"^(solusi|solution)\s*:?(\s.*)?$", l) or re.match(r"^(solusi|solution)\s*:", l):
         return "solution"
     if re.match(r"^(alat yang terpasang|perangkat yang di ?ambil)\s*:?", l):
         return "alat"
@@ -146,6 +146,13 @@ def _report_section(line: str) -> str | None:
         return "splitter"
     if re.match(r"^(said|pas)\s*:", l):
         return "splicer"
+    # header tanpa nilai di barisnya sendiri: nilai menyusul sebagai bullet di bawahnya
+    if re.match(r"^status\s*:?\s*$", l):
+        return "status"
+    if re.match(r"^(note|catatan|keterangan)\s*:?\s*$", l):
+        return "note"
+    if re.match(r"^(hasil\s+survey|hasil\s+pengecekan)\s*:?\s*$", l):
+        return "survey"
     return None
 
 
@@ -157,7 +164,7 @@ def parse_report(text: str) -> dict:
     wo_code = m.group(0)
 
     r = {"status_report": None, "case": [], "action": [], "solution": [],
-         "alat_terpasang": [], "pic_teknisi": None, "report_date": None,
+         "alat_terpasang": [], "note": [], "survey": [], "pic_teknisi": None, "report_date": None,
          "start": None, "finish": None, "pic_pendamping": None, "tarik": None,
          "aktivasi": None, "meteran": None, "splitter": None, "splicer": None,
          "segmen": None, "description": None, "sn_ont": None, "username": None,
@@ -173,7 +180,10 @@ def parse_report(text: str) -> dict:
             v = m.group(2).strip()
             # "status", typo umum di report lapangan: "staatus"/"staus"
             if re.match(r"^st(?:aa?)?t?u?s\b", k):
-                r["status_report"] = v or None; continue
+                if v:
+                    r["status_report"] = v
+                    continue
+                # nilai menyusul sebagai bullet → biarkan jadi section "status"
             if re.match(r"^hari|tanggal", k):
                 r["report_date"] = v or None; continue
             if re.match(r"^pic teknisi", k):
@@ -225,6 +235,12 @@ def parse_report(text: str) -> dict:
                 r["solution"].append(item)
             elif section == "alat":
                 r["alat_terpasang"].append(item)
+            elif section == "note":
+                r["note"].append(item)
+            elif section == "survey":
+                r["survey"].append(item)
+            elif section == "status":
+                r["status_report"] = item
             elif section == "splitter":
                 r["splitter"] = ((r["splitter"] or "") + "\n" + item).strip()
             elif section == "splicer":
@@ -236,6 +252,10 @@ def parse_report(text: str) -> dict:
             r["splicer"] = ((r["splicer"] or "") + "\n" + raw).strip()
         elif section == "solution":
             r["solution"].append(raw)
+        elif section == "note":
+            r["note"].append(raw)
+        elif section == "survey":
+            r["survey"].append(raw)
         elif re.search(r"tarikan|meter", raw, re.I):
             r["meteran"] = ((r["meteran"] or "") + "\n" + raw).strip()
 
