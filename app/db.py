@@ -210,14 +210,23 @@ def list_pending() -> list[dict]:
 
 
 def apply_pending(wo: dict) -> int:
-    """Tempel semua laporan tertahan untuk kode WO ini (urut id → terakhir menang) → done."""
+    """Tempel semua laporan tertahan untuk kode WO ini (urut id → terakhir menang).
+
+    Laporan berstatus terbuka (Pending/Proses/...) ditempel tanpa menutup WO.
+    """
+    from app import parser
+
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM pending_reports WHERE wo_code = ? ORDER BY id",
                             (wo["wo_code"],)).fetchall()
     for r in rows:
-        update_wo(wo["id"], {"report_json": json.loads(r["report_json"]),
-                             "report_raw": r["report_raw"],
-                             "status": "done", "done_at": _now_iso()})
+        report = json.loads(r["report_json"])
+        fields = {"report_json": report, "report_raw": r["report_raw"]}
+        if parser.report_is_open(report):
+            fields["status"] = "dikerjakan" if wo["status"] in ("masuk", "done") else wo["status"]
+        else:
+            fields.update({"status": "done", "done_at": _now_iso()})
+        update_wo(wo["id"], fields)
         with get_conn() as conn:
             conn.execute("DELETE FROM pending_reports WHERE id = ?", (r["id"],))
             conn.commit()

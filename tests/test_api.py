@@ -257,6 +257,32 @@ def test_report_unmatched_held_then_auto_applied():
     assert not any(p["wo_code"] == code for p in db.list_pending())
 
 
+def test_report_pending_does_not_close_wo():
+    """Status laporan Pending → report tersimpan, WO tetap terbuka (tidak auto-done)."""
+    code = "WO/260924/M09/FZ/BL0777"
+    client.post("/api/wo/raw", json={"text": WO_M.replace("WO/260812/M01/FZ/BL0277", code)})
+    text = (
+        "Report Dismantle\n\n" + code + "\nCUST PENDING\n\n"
+        "Note:\n- kos terkunci\n\nStatus : Pending"
+    )
+    body = client.post("/api/wo/raw", json={"text": text}).json()
+    assert body["matched"] is True and body.get("open") is True
+    assert body["wo"]["status"] == "dikerjakan"
+    assert body["wo"]["done_at"] is None
+    assert body["wo"]["report"]["status_report"] == "Pending"
+    assert body["wo"]["report"]["note"] == ["kos terkunci"]
+
+
+def test_report_cleared_closes_wo():
+    """Status laporan Cleared → WO ditutup (done)."""
+    code = "WO/260924/M10/FZ/BL0778"
+    client.post("/api/wo/raw", json={"text": WO_M.replace("WO/260812/M01/FZ/BL0277", code)})
+    text = "Report Maintenance\n\n" + code + "\nCUST OK\n\nCase:\n- kabel putus\n\nStatus : Cleared"
+    body = client.post("/api/wo/raw", json={"text": text}).json()
+    assert body["matched"] is True and not body.get("open")
+    assert body["wo"]["status"] == "done" and body["wo"]["done_at"] is not None
+
+
 def test_unmatched_returns_similar_candidates():
     """B: kode mirip (salah urutan/tahun) dikembalikan sebagai kandidat saran."""
     code = "WO/260924/M08/FZ/BL0888"

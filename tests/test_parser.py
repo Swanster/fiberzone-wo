@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.parser import parse_raw, parse_wo_code
+from app.parser import parse_raw, report_is_open, parse_wo_code
 
 WO_M = """WO/260812/M01/FZ/BL0277
 SITI SAKDEYA
@@ -301,6 +301,23 @@ Status : Cleared.
     assert d["recognized"] and d["kind"] == "report"
     assert d["wo_code"] == "WO/260921/B01/BANGUNJARINGAN"
     assert d["report"]["status_report"] == "Cleared."
+
+
+def test_report_open_status_not_cleared():
+    """Status laporan Pending/Proses → pekerjaan belum tuntas (report_is_open True)."""
+    base = (
+        "Report Dismantle\n\n"
+        "WO/260923/D01/MiniFZ-064\nSISWOYO\n\n"
+        "Note:\n- pelanggan sudah pindah kos\n\n"
+        "Status : {st}"
+    )
+    for st, expected in [("Pending", True), ("Cleared", False), ("Done", False),
+                         ("Proses", True), ("On Progress", True), ("Cleared.", False)]:
+        d = parse_raw(base.format(st=st))
+        assert d["recognized"], st
+        assert report_is_open(d["report"]) is expected, (st, d["report"]["status_report"])
+        if st == "Pending":
+            assert d["report"]["note"] == ["pelanggan sudah pindah kos"]
 
 
 def test_report_dismantle_barang_diambil():

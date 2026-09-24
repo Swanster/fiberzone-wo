@@ -89,8 +89,15 @@ def raw_wo(payload: RawIn):
         return {"recognized": True, "wo_code": code, "matched": False,
                 "reason": "WO tidak ditemukan (unmatched)",
                 "held": True, "candidates": cands}
-    fields = {"report_json": report, "report_raw": parsed["report_raw"],
-              "status": "done", "done_at": _now()}
+    fields = {"report_json": report, "report_raw": parsed["report_raw"]}
+    if parser.report_is_open(report):
+        # Status laporan Pending/Proses/... → pekerjaan belum tuntas: jangan tutup WO.
+        if wo["status"] == "masuk":
+            fields.update({"status": "dikerjakan", "started_at": _now()})
+        updated = db.update_wo(wo["id"], fields)
+        return {"recognized": True, "wo_code": code, "matched": True, "open": True,
+                "wo": updated}
+    fields.update({"status": "done", "done_at": _now()})
     updated = db.update_wo(wo["id"], fields)
     return {"recognized": True, "wo_code": code, "matched": True, "wo": updated}
 

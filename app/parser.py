@@ -21,6 +21,9 @@ WO_ANY_RE = re.compile(r"WO/(\d{6})/([A-Z])(\d+)(?:/([\w./-]+))?")
 INVISIBLE_RE = re.compile(r"[\u200e\u200f\u200b\ufeff]")
 BULLET_RE = re.compile(r"^[-–•‣]\s*(.*)$")
 KEYVALUE_RE = re.compile(r"^([A-Za-z\s/\.]+?)\s*:\s*(.*)$")
+# status laporan yang berarti pekerjaan BELUM tuntas → WO tidak ditutup otomatis
+OPEN_STATUS_RE = re.compile(
+    r"^(pending|proses|dalam proses|masih|belum|on ?hold|hold|on ?progress|ditunda|kendala)\b")
 
 TYPE_LABEL = {"P": "PSB", "M": "Maintenance", "T": "Troubleshoot",
               "D": "Dismantle", "B": "Bangun Jaringan", "S": "Survey"}
@@ -262,5 +265,10 @@ def parse_report(text: str) -> dict:
     return {"recognized": True, "kind": "report", "wo_code": wo_code,
             "report": r, "report_raw": text}
 
+
+def report_is_open(report: dict) -> bool:
+    """True bila status laporan menunjukkan pekerjaan belum selesai (Pending/Proses/...)."""
+    st = (report or {}).get("status_report") or ""
+    return bool(OPEN_STATUS_RE.match(st.strip().lower()))
 
 
