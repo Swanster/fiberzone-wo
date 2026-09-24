@@ -303,6 +303,26 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_single_line_custom_header():
+    """Report satu baris, header kustom 'Report Gamas', WO menempel di tengah kalimat."""
+    text = (
+        "Report Gamas WO/260922/M01/GAMAS Case : - kabel input Splitter [32][33]&[34][35] di sabotase "
+        "Action: - Tarik kabel 2 core sepanjang 250m dari V-DPS2-FDT09-FAT01 (PINTU MASUK KERTAPURA) "
+        "- Sambung core to core di rokset - Cek redaman input dan output splitter "
+        "- Migrasi seluruh pelanggan under splitter yg terdampak ke GPON baru Barang yang digunakan: "
+        "- Kabel 2 core 250m - 1 buah rokset - 2 buah pigtail biru status : done"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["wo_code"] == "WO/260922/M01/GAMAS"
+    r = d["report"]
+    assert r["status_report"] == "done"
+    assert r["case"] == ["kabel input Splitter [32][33]&[34][35] di sabotase"]
+    assert any("Tarik kabel 2 core sepanjang 250m" in a for a in r["action"])
+    assert any("pigtail biru" in a for a in r["action"])
+    assert d["report_raw"] == text  # teks literal tersimpan utuh
+
+
 def test_report_section_header_without_colon():
     """Header 'Case' / 'Action' tanpa titik dua tetap jadi section (bukan hilang)."""
     text = (

@@ -17,6 +17,7 @@ REPORT_KEYWORDS = (
     "laporan selesai",
 )
 WO_CODE_RE = re.compile(r"^WO/(\d{6})/([A-Z])(\d+)(?:/([\w./-]+))?")
+WO_ANY_RE = re.compile(r"WO/(\d{6})/([A-Z])(\d+)(?:/([\w./-]+))?")
 INVISIBLE_RE = re.compile(r"[\u200e\u200f\u200b\ufeff]")
 BULLET_RE = re.compile(r"^[-–•‣]\s*(.*)$")
 KEYVALUE_RE = re.compile(r"^([A-Za-z\s/\.]+?)\s*:\s*(.*)$")
@@ -43,7 +44,19 @@ def parse_wo_code(wo_code: str) -> dict | None:
 
 def _is_report(text_lines: list[str]) -> bool:
     first = next((ln.lower() for ln in text_lines if ln), "")
-    return any(kw in first for kw in REPORT_KEYWORDS)
+    # ponytail: prefix report/repot menangkap header kustom ("Report Gamas ...");
+    # upgrade path: daftarkan header eksplisit bila ada pesan non-report di grup.
+    return bool(re.match(r"^(report|repot)\b", first)) or any(kw in first for kw in REPORT_KEYWORDS)
+
+
+_HEADER_RE = re.compile(
+    r"(?i)(?<!\S)((?:case|action|status|solusi|solution|barang yang digunakan|alat yang terpasang)\s*:)")
+_BULLET_MID_RE = re.compile(r"\s+([-–•‣]\s+)")
+
+
+def _reflow(text: str) -> str:
+    """Report yang terkirim jadi satu baris: pecah sebelum header/bullet agar terbaca."""
+    return _BULLET_MID_RE.sub(r"\n\1", _HEADER_RE.sub(r"\n\1", text))
 
 
 def parse_raw(text: str) -> dict:
@@ -137,10 +150,10 @@ def _report_section(line: str) -> str | None:
 
 
 def parse_report(text: str) -> dict:
-    lines = [ln for ln in _clean_lines(text) if ln]
-    m = next((m for m in map(WO_CODE_RE.match, lines) if m), None)
+    lines = [ln for ln in _clean_lines(_reflow(text)) if ln]
+    m = next((m for ln in lines if (m := WO_ANY_RE.search(ln))), None)
     if not m:
-        return {"recognized": False, "reason": "Tidak ada baris WO/... di teks"}
+        return {"recognized": False, "reason": "Tidak ada teks WO/... di laporan"}
     wo_code = m.group(0)
 
     r = {"status_report": None, "case": [], "action": [], "solution": [],
