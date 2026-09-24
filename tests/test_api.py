@@ -283,6 +283,21 @@ def test_report_cleared_closes_wo():
     assert body["wo"]["status"] == "done" and body["wo"]["done_at"] is not None
 
 
+def test_pending_open_report_does_not_close_on_wo_arrival():
+    """Report Pending tertahan → saat WO masuk, report ditempel tapi WO tetap terbuka."""
+    code = "WO/260924/D09/FZ/BL0991"
+    rtext = ("Report Dismantle\n\n" + code + "\nCUST\n\nNote:\n- kos terkunci\n\nStatus : Pending")
+    b1 = client.post("/api/wo/raw", json={"text": rtext}).json()
+    assert b1["held"] is True
+    wtext = WO_M.replace("WO/260812/M01/FZ/BL0277", code)
+    b2 = client.post("/api/wo/raw", json={"text": wtext}).json()
+    assert b2["applied_reports"] == 1
+    assert b2["wo"]["status"] == "dikerjakan"
+    assert b2["wo"]["done_at"] is None
+    assert b2["wo"]["started_at"] is not None
+    assert b2["wo"]["report"]["status_report"] == "Pending"
+
+
 def test_unmatched_returns_similar_candidates():
     """B: kode mirip (salah urutan/tahun) dikembalikan sebagai kandidat saran."""
     code = "WO/260924/M08/FZ/BL0888"

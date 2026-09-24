@@ -223,7 +223,10 @@ def apply_pending(wo: dict) -> int:
         report = json.loads(r["report_json"])
         fields = {"report_json": report, "report_raw": r["report_raw"]}
         if parser.report_is_open(report):
-            fields["status"] = "dikerjakan" if wo["status"] in ("masuk", "done") else wo["status"]
+            if wo["status"] in ("masuk", "done"):
+                fields["status"] = "dikerjakan"
+                if not wo.get("started_at"):
+                    fields["started_at"] = _now_iso()
         else:
             fields.update({"status": "done", "done_at": _now_iso()})
         update_wo(wo["id"], fields)
