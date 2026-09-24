@@ -303,6 +303,14 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_header_instalasi():
+    """Header 'REPORT INSTALASI' harus dikenali sebagai report."""
+    text = "REPORT INSTALASI\n\nWO/260917/P01/FZ-ABP-3075_01\nRENDRAWATI\n\nPSB Mini Fiberzone upto 15Mbps\n\nTotal Tarikan : 68 Meter\n"
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report"
+    assert d["wo_code"] == "WO/260917/P01/FZ-ABP-3075_01"
+
+
 def test_wo_code_glued_with_customer_name():
     """Baris 'WO/... NAMA' satu baris: kode dipotong sampai token, nama tidak ikut."""
     text = (

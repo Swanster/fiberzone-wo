@@ -11,6 +11,7 @@ REPORT_KEYWORDS = (
     "report dismantle", "repot dismantle",
     'report bangun jaringan', 'repot bangun jaringan',
     'report pembangunan jaringan', 'repot pembangunan jaringan',
+    'report instalasi', 'repot instalasi',
     "report survey", "repot survey", "report surfey", "repot surfey",
     "report pemeliharaan", "repot pemeliharaan",
     "laporan selesai",
