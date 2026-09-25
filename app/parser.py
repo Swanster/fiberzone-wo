@@ -56,6 +56,25 @@ _HEADER_RE = re.compile(
     r"(?i)(?<!\S)((?:case|action|status|solusi|solution|barang yang digunakan|alat yang terpasang)\s*:)")
 _BULLET_MID_RE = re.compile(r"\s+([-–•‣]\s+)")
 
+# Penanda isi LAPORAN (bukan WO). Dipakai saat baris pertama sudah kode WO/...
+# tanpa header "Report ..." — mis. teks laporan yang disalin mulai dari kode.
+# STRONG: hampir mustahil muncul di teks WO. WEAK: bisa muncul di WO (mis. "NOTE:")
+# → baru dianggap laporan bila ada ≥2 penanda weak.
+REPORT_STRONG_RE = re.compile(
+    r"(?im)^\s*(detail laporan|tarikan awal|tarikan akhir|total tarikan|alat yang terpasang|"
+    r"barang yang di\s|perangkat yang di\s|hasil survey|hasil pengecekan|solusi|solution|"
+    r"pic teknisi|pic yang mendampingi|no\.? hasbel)")
+REPORT_WEAK_RE = re.compile(
+    r"(?im)^\s*(case|action|status|note|catatan|keterangan)\b")
+
+
+def _has_report_markers(text: str) -> bool:
+    # baris sering diawali karakter tak terlihat (\u200e) → bersihkan dulu
+    text = INVISIBLE_RE.sub("", text)
+    if REPORT_STRONG_RE.search(text):
+        return True
+    return len(REPORT_WEAK_RE.findall(text)) >= 2
+
 
 def _reflow(text: str) -> str:
     """Report yang terkirim jadi satu baris: pecah sebelum header/bullet agar terbaca."""
@@ -70,6 +89,10 @@ def parse_raw(text: str) -> dict:
     if _is_report(lines):
         return parse_report(text)
     if lines[0].startswith("WO/"):
+        # Laporan yang disalin mulai dari kode WO (tanpa header "Report ..."):
+        # kenali dari penanda isi laporan agar tidak tersimpan sebagai WO baru.
+        if _has_report_markers(text) and WO_ANY_RE.match(lines[0]):
+            return parse_report(text)
         return parse_wo(text)
     return {"recognized": False, "reason": "Format tidak dikenal"}
 

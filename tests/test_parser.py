@@ -303,6 +303,47 @@ Status : Cleared.
     assert d["report"]["status_report"] == "Cleared."
 
 
+def test_report_copied_from_wo_code_line():
+    """Laporan yang disalin mulai dari baris kode WO (tanpa header 'Report ...')
+    tetap dikenali sebagai report, bukan WO baru."""
+    text = (
+        "WO/260925/P01/FZ-ABP-3104_01\n"
+        "AHMAD ZAKKI\nJL. KERTAPURA VIII, DENPASAR BARAT\n0812 2696 6448\n\n"
+        "Type Package : Mini FIberzone 15Mbps\n"
+        "Detail laporan :\n"
+        "Hari / Tanggal : 25 September 2026\n"
+        "PIC Teknisi : Rhei, Risky\n"
+        "Tarikan awal : 333 Meter\n"
+        "Tarikan akhir : 275 Meter\n"
+        "Total Tarikan : 58 Meter\n"
+        "TARIK: OK\n"
+        "AKTIVASI : OK\n\n"
+        "Solution :\n- Tarik kabel FO 1 Core dari Splitter terdekat\n\n"
+        "Alat Yang Terpasang :\n- Patchcore Biru 1 Pcs\n\n"
+        "SN ONT: ALCLB44368CB\nUsername: FZ-ABP-3104_01\n\n"
+        "Staatus : Cleared"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "report", d
+    assert d["wo_code"] == "WO/260925/P01/FZ-ABP-3104_01"
+    r = d["report"]
+    assert r["status_report"] == "Cleared"
+    assert r["tarik"] == "OK" and r["aktivasi"] == "OK"
+    assert "333 Meter" in r["meteran"]
+    assert r["alat_terpasang"] == ["Patchcore Biru 1 Pcs"]
+    assert d["report_raw"] == text
+
+
+def test_plain_wo_not_mistaken_for_report():
+    """WO biasa (tanpa penanda laporan) tetap dikenali sebagai WO."""
+    text = (
+        "WO/260924/M01/FZ/LB0038\nI WAYAN SERAYA\nJL. MUSHROOM BEACH\n0813 3955 0063\n\n"
+        "FO CUT\n\n@Ardhi2002 @bgs_dka"
+    )
+    d = parse_raw(text)
+    assert d["recognized"] and d["kind"] == "wo", d
+
+
 def test_report_open_status_not_cleared():
     """Status laporan Pending/Proses → pekerjaan belum tuntas (report_is_open True)."""
     base = (
